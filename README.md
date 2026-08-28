@@ -112,6 +112,18 @@ The demo is a fantasy football draft poll with availability, yes/no, multiple ch
 | `NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL` | After sign-in (`/dashboard`) |
 | `NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL` | After sign-up (`/dashboard`) |
 
+## Deploying to Vercel
+
+The Vercel Supabase integration sets `POSTGRES_URL` (and related keys). Quorum reads `DATABASE_URL` first, then falls back to `POSTGRES_URL`, so you do not need to copy those values into `.env.local` for local Homebrew Postgres.
+
+Then apply migrations against the hosted database (use the non-pooling URL if you have it):
+
+```bash
+POSTGRES_URL_NON_POOLING="postgres://..." npm run db:migrate
+```
+
+Clerk’s Vercel connector should supply the Clerk keys. In the Clerk Dashboard, add your Vercel domain to the allowed origins.
+
 ## Architectural decisions
 
 - **Participants never need accounts.** Organizers sign in with Clerk. Creating a poll attaches it to their account and lists it on `/dashboard`.

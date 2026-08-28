@@ -6,6 +6,8 @@ import { Card, Main, PageShell, SiteHeader } from "@/components/ui/shell";
 import { getPollsByOwnerUserId } from "@/lib/polls/queries";
 import { adminPath } from "@/lib/polls/paths";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "My polls",
 };
