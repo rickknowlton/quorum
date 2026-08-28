@@ -1,0 +1,63 @@
+import { desc, eq } from "drizzle-orm";
+import { db } from "@/db";
+import { participants, polls } from "@/db/schema";
+
+export async function getPollByPublicId(publicId: string) {
+  return db.query.polls.findFirst({
+    where: eq(polls.publicId, publicId),
+    with: {
+      questions: {
+        orderBy: (questions, { asc }) => [asc(questions.sortOrder)],
+        with: {
+          options: {
+            orderBy: (options, { asc }) => [asc(options.sortOrder)],
+          },
+          finalization: true,
+        },
+      },
+      participants: {
+        orderBy: (people, { asc }) => [asc(people.createdAt)],
+        with: {
+          responses: true,
+        },
+      },
+    },
+  });
+}
+
+export async function getPollsByOwnerUserId(ownerUserId: string) {
+  return db.query.polls.findMany({
+    where: eq(polls.ownerUserId, ownerUserId),
+    orderBy: [desc(polls.createdAt)],
+    columns: {
+      publicId: true,
+      title: true,
+      description: true,
+      status: true,
+      createdAt: true,
+    },
+    with: {
+      participants: {
+        columns: { id: true },
+      },
+    },
+  });
+}
+
+export async function getParticipantByEditToken(pollId: string, editToken: string) {
+  return db.query.participants.findFirst({
+    where: eq(participants.editToken, editToken),
+    with: {
+      responses: true,
+    },
+  }).then((participant) => {
+    if (!participant || participant.pollId !== pollId) {
+      return undefined;
+    }
+    return participant;
+  });
+}
+
+export type PollWithDetails = NonNullable<Awaited<ReturnType<typeof getPollByPublicId>>>;
+export type PollQuestion = PollWithDetails["questions"][number];
+export type PollParticipant = PollWithDetails["participants"][number];
