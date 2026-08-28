@@ -122,7 +122,16 @@ Then apply migrations against the hosted database (use the non-pooling URL if yo
 POSTGRES_URL_NON_POOLING="postgres://..." npm run db:migrate
 ```
 
-Clerk’s Vercel connector should supply the Clerk keys. In the Clerk Dashboard, add your Vercel domain to the allowed origins.
+Clerk’s Vercel connector should supply the Clerk keys. If it does not, disconnect the integration and add these yourself from [Clerk API keys](https://dashboard.clerk.com/last-active?path=api-keys), then **redeploy** (a rebuild is required for `NEXT_PUBLIC_` keys):
+
+- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
+- `CLERK_SECRET_KEY`
+- `NEXT_PUBLIC_CLERK_SIGN_IN_URL` = `/sign-in`
+- `NEXT_PUBLIC_CLERK_SIGN_UP_URL` = `/sign-up`
+- `NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL` = `/dashboard`
+- `NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL` = `/dashboard`
+
+In the Clerk Dashboard, add your Vercel domain to the allowed origins.
 
 ## Architectural decisions
 
