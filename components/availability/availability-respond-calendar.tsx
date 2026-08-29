@@ -15,8 +15,9 @@ import {
 import { Check, ChevronDown, Minus, X } from "lucide-react";
 import { calendarGridTemplate, hourLines } from "@/components/availability/calendar-layout";
 import { CalendarNav, CalendarViewTabs } from "@/components/availability/calendar-nav";
-import { CalendarScrollArea, scrollTopForSlots, slotOffsetPx } from "@/components/availability/calendar-scroll";
+import { scrollTopForSlots, slotOffsetPx } from "@/components/availability/calendar-scroll";
 import { dayHighlight, useToday } from "@/components/availability/use-today";
+import { WeekCalendarShell } from "@/components/availability/week-calendar-shell";
 import { cn } from "@/lib/cn";
 import {
   formatCompactRange,
@@ -191,31 +192,22 @@ function RespondWeekGrid({
     byDate.set(slot.date, current);
   }
 
-  return (
-    <div className="min-w-0 max-w-full overflow-x-auto rounded-xl border border-border bg-white">
-      <div className="min-w-[46rem]">
-        <div className="grid border-b border-border" style={calendarGridTemplate}>
-          <div className="border-r border-border" />
-          {days.map((day) => {
-            const { past, current } = dayHighlight(day, today);
-            return (
-              <div
-                key={toDateKey(day)}
-                className={cn(
-                  "border-r border-border px-2 py-2 text-center last:border-r-0",
-                  past && "bg-stone-50 text-muted",
-                  current && "bg-teal-50 text-accent",
-                )}
-              >
-                <p className="text-[11px] font-medium uppercase tracking-wide">{format(day, "EEE")}</p>
-                <p className={cn("text-lg font-semibold", current && "text-accent")}>
-                  {format(day, "d")}
-                </p>
-              </div>
-            );
-          })}
-        </div>
+  const weekStart = days[0] ? toDateKey(days[0]) : "";
 
+  return (
+    <WeekCalendarShell
+      days={days}
+      scrollTopPx={scrollTopForSlots(slots.filter((slot) => !slot.allDay).map((slot) => slot.start))}
+      scrollResetKey={weekStart}
+      slotOffsetsPx={slots.flatMap((slot) => {
+        if (slot.allDay) {
+          return [];
+        }
+        const minutes = timeToMinutes(slot.start);
+        return minutes === null ? [] : [slotOffsetPx(minutes)];
+      })}
+      ariaLabel="Availability times"
+      allDay={
         <div className="grid border-b border-border" style={calendarGridTemplate}>
           <div className="flex items-center justify-end border-r border-border px-2 py-2 text-xs text-muted">
             All day
@@ -245,21 +237,8 @@ function RespondWeekGrid({
             );
           })}
         </div>
-
-        <CalendarScrollArea
-          scrollTopPx={scrollTopForSlots(
-            slots.filter((slot) => !slot.allDay).map((slot) => slot.start),
-          )}
-          slotOffsetsPx={slots.flatMap((slot) => {
-            if (slot.allDay) {
-              return [];
-            }
-            const minutes = timeToMinutes(slot.start);
-            return minutes === null ? [] : [slotOffsetPx(minutes)];
-          })}
-          role="grid"
-          aria-label="Availability times"
-        >
+      }
+    >
           <div className="grid" style={{ ...calendarGridTemplate, height: GRID_HEIGHT }}>
             <div className="relative border-r border-border">
               {HOURS.map((hour) => (
@@ -319,9 +298,7 @@ function RespondWeekGrid({
               );
             })}
           </div>
-        </CalendarScrollArea>
-      </div>
-    </div>
+    </WeekCalendarShell>
   );
 }
 

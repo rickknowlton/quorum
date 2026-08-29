@@ -8,6 +8,7 @@ import {
   formatCompactRange,
   formatWeekRangeLabel,
   hasExactSlot,
+  moveSlot,
   removeSlot,
   slotsFromPointerRange,
   snapMinutes,
@@ -129,6 +130,34 @@ describe("group mutations", () => {
     const groups = addSlot([], "2026-08-26", "12:00", "15:00");
     expect(findSlotContaining(groups, "2026-08-26", 12 * 60 + 30)?.end).toBe("15:00");
     expect(findSlotContaining(groups, "2026-08-26", 15 * 60)).toBeUndefined();
+  });
+
+  it("moves a slot to a new day and keeps its duration and id", () => {
+    const groups = addSlot([], "2026-08-26", "17:00", "18:00");
+    const rangeId = groups[0]!.ranges[0]!.id;
+    const next = moveSlot(groups, rangeId, "2026-08-27", 15 * 60, 30);
+
+    expect(flattenRanges(next)).toEqual([
+      { id: rangeId, date: "2026-08-27", start: "15:00", end: "16:00" },
+    ]);
+  });
+
+  it("clamps a move that would run past midnight", () => {
+    const groups = addSlot([], "2026-08-26", "12:00", "14:00");
+    const rangeId = groups[0]!.ranges[0]!.id;
+    const next = moveSlot(groups, rangeId, "2026-08-26", 23 * 60, 30);
+
+    expect(flattenRanges(next)).toEqual([
+      { id: rangeId, date: "2026-08-26", start: "22:00", end: "23:59" },
+    ]);
+  });
+
+  it("leaves groups unchanged when the destination already has that slot", () => {
+    const first = addSlot([], "2026-08-26", "12:00", "13:00");
+    const groups = addSlot(first, "2026-08-27", "15:00", "16:00");
+    const rangeId = groups[0]!.ranges[0]!.id;
+    const next = moveSlot(groups, rangeId, "2026-08-27", 15 * 60, 30);
+    expect(next).toEqual(groups);
   });
 });
 

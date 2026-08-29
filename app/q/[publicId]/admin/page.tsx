@@ -57,8 +57,13 @@ export default async function AdminPage({ params, searchParams }: Props) {
       {queryToken ? <ClaimAdminCookie publicId={publicId} token={queryToken} /> : null}
       <SiteHeader
         action={
-          <LinkButton href={participantPath(publicId)} variant="ghost" size="sm">
-            View participant page
+          <LinkButton
+            href={participantPath(publicId)}
+            variant="ghost"
+            size="sm"
+            className="whitespace-nowrap"
+          >
+            View poll
           </LinkButton>
         }
       />

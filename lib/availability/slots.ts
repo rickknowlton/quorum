@@ -346,6 +346,87 @@ export function toggleAllDay(groups: DateGroupDraft[], date: string) {
   return addSlot(groups, date, ALL_DAY_START, ALL_DAY_END);
 }
 
+export function relocatedRange(
+  range: TimeRangeDraft,
+  toDate: string,
+  startMinutes: number,
+  snap: number,
+) {
+  if (isAllDayRange(range.start, range.end)) {
+    return null;
+  }
+
+  const start = timeToMinutes(range.start);
+  const end = timeToMinutes(range.end);
+  if (start === null || end === null) {
+    return null;
+  }
+
+  const duration = Math.max(snap, end - start);
+  let nextStart = snapMinutes(startMinutes, snap);
+  if (nextStart + duration > MINUTES_IN_DAY) {
+    nextStart = snapMinutes(MINUTES_IN_DAY - duration, snap);
+  }
+  const nextEndMinutes = nextStart + duration;
+  return {
+    date: toDate,
+    start: minutesToTime(nextStart),
+    end: nextEndMinutes >= MINUTES_IN_DAY ? ALL_DAY_END : minutesToTime(nextEndMinutes),
+  };
+}
+
+export function moveSlot(
+  groups: DateGroupDraft[],
+  rangeId: string,
+  toDate: string,
+  startMinutes: number,
+  snap: number,
+) {
+  let found: TimeRangeDraft | undefined;
+  for (const group of groups) {
+    const range = group.ranges.find((item) => item.id === rangeId);
+    if (range) {
+      found = range;
+      break;
+    }
+  }
+
+  if (!found) {
+    return groups;
+  }
+
+  const next = relocatedRange(found, toDate, startMinutes, snap);
+  if (!next) {
+    return groups;
+  }
+
+  const stripped = groups
+    .map((group) => ({
+      ...group,
+      ranges: group.ranges.filter((range) => range.id !== rangeId),
+    }))
+    .filter((group) => group.ranges.length > 0);
+
+  if (hasExactSlot(stripped, next.date, next.start, next.end)) {
+    return groups;
+  }
+
+  const moved = { ...found, start: next.start, end: next.end };
+  const existing = stripped.find((group) => group.date === toDate);
+  if (!existing) {
+    return sortGroups([
+      ...stripped,
+      { id: crypto.randomUUID(), date: toDate, ranges: [moved] },
+    ]);
+  }
+
+  return sortGroups(
+    stripped.map((group) =>
+      group.date === toDate ? { ...group, ranges: [...group.ranges, moved] } : group,
+    ),
+  );
+}
+
 export function applyGridPointer(
   groups: DateGroupDraft[],
   date: string,

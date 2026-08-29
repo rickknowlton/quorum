@@ -19,7 +19,7 @@ export function Input({
   return (
     <input
       className={cn(
-        "mt-1.5 min-h-11 w-full rounded-lg border border-border bg-white px-3 text-base text-foreground shadow-sm outline-none placeholder:text-stone-400",
+        "mt-1.5 min-h-11 w-full min-w-0 max-w-full rounded-lg border border-border bg-white px-3 text-base text-foreground shadow-sm outline-none placeholder:text-stone-400",
         className,
       )}
       {...props}

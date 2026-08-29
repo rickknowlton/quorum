@@ -63,8 +63,8 @@ export function AvailabilityBuilder({
   return (
     <div className="space-y-6">
       <p className="text-sm text-muted">
-        Click a time to add it. Drag to add several in a row. Each block is a separate option
-        people can vote on.
+        Click a time to add it. Drag to add several in a row. Hold a block, then drag to move it.
+        Tap a block to remove it. Each block is a separate option people can vote on.
       </p>
 
       <AvailabilityCalendar groups={groups} onChange={onChange} timezone={timezone} />
@@ -103,12 +103,15 @@ export function AvailabilityBuilder({
                 </div>
                 <ul className="mt-4 space-y-3">
                   {group.ranges.map((range) => (
-                    <li key={range.id} className="flex flex-wrap items-end gap-3">
+                    <li
+                      key={range.id}
+                      className="grid grid-cols-1 gap-3 sm:flex sm:flex-wrap sm:items-end"
+                    >
                       {isAllDayRange(range.start, range.end) ? (
-                        <p className="mb-2 text-sm font-medium">All day</p>
+                        <p className="text-sm font-medium">All day</p>
                       ) : (
                         <>
-                          <div>
+                          <div className="min-w-0">
                             <Label htmlFor={`start-${range.id}`}>Start</Label>
                             <Input
                               id={`start-${range.id}`}
@@ -119,10 +122,10 @@ export function AvailabilityBuilder({
                               }
                             />
                           </div>
-                          <span className="mb-3 text-muted" aria-hidden="true">
+                          <span className="hidden text-muted sm:mb-3 sm:inline" aria-hidden="true">
                             –
                           </span>
-                          <div>
+                          <div className="min-w-0">
                             <Label htmlFor={`end-${range.id}`}>End</Label>
                             <Input
                               id={`end-${range.id}`}
@@ -133,7 +136,7 @@ export function AvailabilityBuilder({
                               }
                             />
                           </div>
-                          <p className="mb-3 text-sm text-muted">
+                          <p className="text-sm text-muted sm:mb-3">
                             {formatCompactRange(range.start, range.end)}
                           </p>
                         </>
@@ -141,6 +144,7 @@ export function AvailabilityBuilder({
                       <Button
                         variant="ghost"
                         size="sm"
+                        className="w-full justify-center sm:w-auto"
                         aria-label={`Remove ${formatCompactRange(range.start, range.end)}`}
                         onClick={() =>
                           onChange(removeSlot(groups, group.date, range.start, range.end))

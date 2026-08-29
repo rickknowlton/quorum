@@ -14,8 +14,9 @@ import {
 } from "date-fns";
 import { calendarGridTemplate, hourLines } from "@/components/availability/calendar-layout";
 import { CalendarNav, CalendarViewTabs } from "@/components/availability/calendar-nav";
-import { CalendarScrollArea, scrollTopForSlots, slotOffsetPx } from "@/components/availability/calendar-scroll";
+import { scrollTopForSlots, slotOffsetPx } from "@/components/availability/calendar-scroll";
 import { dayHighlight, useToday } from "@/components/availability/use-today";
+import { WeekCalendarShell } from "@/components/availability/week-calendar-shell";
 import { cn } from "@/lib/cn";
 import {
   formatCompactRange,
@@ -185,31 +186,22 @@ function ResultsWeekGrid({
     byDate.set(slot.date, current);
   }
 
-  return (
-    <div className="min-w-0 max-w-full overflow-x-auto rounded-xl border border-border bg-white">
-      <div className="min-w-[46rem]">
-        <div className="grid border-b border-border" style={calendarGridTemplate}>
-          <div className="border-r border-border" />
-          {days.map((day) => {
-            const { past, current } = dayHighlight(day, today);
-            return (
-              <div
-                key={toDateKey(day)}
-                className={cn(
-                  "border-r border-border px-2 py-2 text-center last:border-r-0",
-                  past && "bg-stone-50 text-muted",
-                  current && "bg-teal-50 text-accent",
-                )}
-              >
-                <p className="text-[11px] font-medium uppercase tracking-wide">{format(day, "EEE")}</p>
-                <p className={cn("text-lg font-semibold", current && "text-accent")}>
-                  {format(day, "d")}
-                </p>
-              </div>
-            );
-          })}
-        </div>
+  const weekStart = days[0] ? toDateKey(days[0]) : "";
 
+  return (
+    <WeekCalendarShell
+      days={days}
+      scrollTopPx={scrollTopForSlots(slots.filter((slot) => !slot.allDay).map((slot) => slot.start))}
+      scrollResetKey={weekStart}
+      slotOffsetsPx={slots.flatMap((slot) => {
+        if (slot.allDay) {
+          return [];
+        }
+        const minutes = timeToMinutes(slot.start);
+        return minutes === null ? [] : [slotOffsetPx(minutes)];
+      })}
+      ariaLabel="Availability results"
+      allDay={
         <div className="grid border-b border-border" style={calendarGridTemplate}>
           <div className="flex items-center justify-end border-r border-border px-2 py-2 text-xs text-muted">
             All day
@@ -239,83 +231,65 @@ function ResultsWeekGrid({
             );
           })}
         </div>
-
-        <CalendarScrollArea
-          scrollTopPx={scrollTopForSlots(
-            slots.filter((slot) => !slot.allDay).map((slot) => slot.start),
-          )}
-          slotOffsetsPx={slots.flatMap((slot) => {
-            if (slot.allDay) {
-              return [];
-            }
-            const minutes = timeToMinutes(slot.start);
-            return minutes === null ? [] : [slotOffsetPx(minutes)];
-          })}
-          role="grid"
-          aria-label="Availability results"
-        >
-          <div className="grid" style={{ ...calendarGridTemplate, height: GRID_HEIGHT }}>
-            <div className="relative border-r border-border">
-              {HOURS.map((hour) => (
-                <div
-                  key={hour}
-                  className="absolute right-2 text-[11px] text-muted"
-                  style={{ top: hour * HOUR_HEIGHT_PX - (hour === 0 ? 0 : 8) }}
-                >
-                  {formatHourLabel(hour)}
-                </div>
-              ))}
+      }
+    >
+      <div className="grid" style={{ ...calendarGridTemplate, height: GRID_HEIGHT }}>
+        <div className="relative border-r border-border">
+          {HOURS.map((hour) => (
+            <div
+              key={hour}
+              className="absolute right-2 text-[11px] text-muted"
+              style={{ top: hour * HOUR_HEIGHT_PX - (hour === 0 ? 0 : 8) }}
+            >
+              {formatHourLabel(hour)}
             </div>
-            {days.map((day) => {
-              const date = toDateKey(day);
-              const timed = (byDate.get(date) ?? []).filter((slot) => !slot.allDay);
-              const { past, current } = dayHighlight(day, today);
-              return (
-                <div
-                  key={date}
-                  className={cn(
-                    "relative border-r border-border last:border-r-0",
-                    past && "bg-stone-50/80",
-                    current && "bg-teal-50/40",
-                  )}
-                  style={{
-                    backgroundImage: hourLines,
-                    backgroundSize: `100% ${HOUR_HEIGHT_PX}px, 100% ${HOUR_HEIGHT_PX}px`,
-                    backgroundPosition: `0 0, 0 ${HOUR_HEIGHT_PX / 2}px`,
-                  }}
-                >
-                  {timed.map((slot) => {
-                    const startMinutes = timeToMinutes(slot.start) ?? 0;
-                    const endMinutes = timeToMinutes(slot.end) ?? 0;
-                    const height = Math.max(
-                      (endMinutes - startMinutes) * (HOUR_HEIGHT_PX / 60),
-                      16,
-                    );
-                    return (
-                      <div
-                        key={slot.id}
-                        className="absolute inset-x-1 z-20"
-                        style={{
-                          top: startMinutes * (HOUR_HEIGHT_PX / 60) + 1,
-                          height: height - 2,
-                        }}
-                      >
-                        <HeatSlot
-                          slot={slot}
-                          tally={tallyById.get(slot.id)}
-                          participantCount={participantCount}
-                          fill
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-              );
-            })}
-          </div>
-        </CalendarScrollArea>
+          ))}
+        </div>
+        {days.map((day) => {
+          const date = toDateKey(day);
+          const timed = (byDate.get(date) ?? []).filter((slot) => !slot.allDay);
+          const { past, current } = dayHighlight(day, today);
+          return (
+            <div
+              key={date}
+              className={cn(
+                "relative border-r border-border last:border-r-0",
+                past && "bg-stone-50/80",
+                current && "bg-teal-50/40",
+              )}
+              style={{
+                backgroundImage: hourLines,
+                backgroundSize: `100% ${HOUR_HEIGHT_PX}px, 100% ${HOUR_HEIGHT_PX}px`,
+                backgroundPosition: `0 0, 0 ${HOUR_HEIGHT_PX / 2}px`,
+              }}
+            >
+              {timed.map((slot) => {
+                const startMinutes = timeToMinutes(slot.start) ?? 0;
+                const endMinutes = timeToMinutes(slot.end) ?? 0;
+                const height = Math.max((endMinutes - startMinutes) * (HOUR_HEIGHT_PX / 60), 16);
+                return (
+                  <div
+                    key={slot.id}
+                    className="absolute inset-x-1 z-20"
+                    style={{
+                      top: startMinutes * (HOUR_HEIGHT_PX / 60) + 1,
+                      height: height - 2,
+                    }}
+                  >
+                    <HeatSlot
+                      slot={slot}
+                      tally={tallyById.get(slot.id)}
+                      participantCount={participantCount}
+                      fill
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })}
       </div>
-    </div>
+    </WeekCalendarShell>
   );
 }
 

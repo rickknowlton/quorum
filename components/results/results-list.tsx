@@ -189,12 +189,18 @@ function AvailabilityResultsCard({
           className="mt-6 rounded-lg border border-dashed border-border p-4"
         >
           <p className="text-sm font-medium">Add another candidate time</p>
-          <div className="mt-3 flex flex-wrap items-end gap-3">
-            <div>
+          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end">
+            <div className="min-w-0">
               <Label htmlFor={`add-date-${result.question.id}`}>Date</Label>
-              <Input id={`add-date-${result.question.id}`} name="date" type="date" required />
+              <Input
+                id={`add-date-${result.question.id}`}
+                name="date"
+                type="date"
+                required
+                className="min-w-0 max-w-full"
+              />
             </div>
-            <div>
+            <div className="min-w-0">
               <Label htmlFor={`add-start-${result.question.id}`}>Start</Label>
               <Input
                 id={`add-start-${result.question.id}`}
@@ -202,9 +208,10 @@ function AvailabilityResultsCard({
                 type="time"
                 defaultValue="18:00"
                 required
+                className="min-w-0 max-w-full"
               />
             </div>
-            <div>
+            <div className="min-w-0">
               <Label htmlFor={`add-end-${result.question.id}`}>End</Label>
               <Input
                 id={`add-end-${result.question.id}`}
@@ -212,9 +219,10 @@ function AvailabilityResultsCard({
                 type="time"
                 defaultValue="21:00"
                 required
+                className="min-w-0 max-w-full"
               />
             </div>
-            <Button type="submit" variant="secondary" size="sm">
+            <Button type="submit" variant="secondary" size="sm" className="w-full sm:w-auto">
               Add time
             </Button>
           </div>

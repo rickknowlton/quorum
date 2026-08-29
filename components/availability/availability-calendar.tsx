@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   addMonths,
   addWeeks,
@@ -13,7 +13,8 @@ import {
   startOfWeek,
 } from "date-fns";
 import { CalendarNav, CalendarViewTabs } from "@/components/availability/calendar-nav";
-import { CalendarScrollArea, slotOffsetPx } from "@/components/availability/calendar-scroll";
+import { slotOffsetPx } from "@/components/availability/calendar-scroll";
+import { WeekCalendarShell } from "@/components/availability/week-calendar-shell";
 import { cn } from "@/lib/cn";
 import { timezoneLabel } from "@/lib/dates/format";
 import {
@@ -33,6 +34,8 @@ import {
   hasExactSlot,
   HOUR_HEIGHT_PX,
   HOURS,
+  moveSlot,
+  relocatedRange,
   snapForDuration,
   snapMinutes,
   slotsFromPointerRange,
@@ -54,8 +57,24 @@ type DragState = {
   date: string;
   anchorMinutes: number;
   edgeMinutes: number;
-  mode: "add" | "remove";
+  mode: "add" | "remove" | "move";
+  rangeId?: string;
 };
+
+type PressState = {
+  pointerId: number;
+  date: string;
+  minutes: number;
+  x: number;
+  y: number;
+  rangeId?: string;
+  target: HTMLElement;
+  timer?: number;
+};
+
+const LONG_PRESS_MS = 400;
+const TOUCH_SCROLL_PX = 12;
+const MOUSE_DRAG_PX = 6;
 
 export function AvailabilityCalendar({
   groups,
@@ -78,7 +97,7 @@ export function AvailabilityCalendar({
     minutes: 9 * 60,
   });
   const dragRef = useRef<DragState | null>(null);
-  const touchRef = useRef<{ x: number; y: number } | null>(null);
+  const pressRef = useRef<PressState | null>(null);
   const [gridFocused, setGridFocused] = useState(false);
 
   const weekDays = useMemo(() => weekDaysFrom(cursorDate), [cursorDate]);
@@ -107,6 +126,35 @@ export function AvailabilityCalendar({
     dragRef.current = next;
     setDrag(next);
   }
+
+  function clearPress() {
+    if (pressRef.current?.timer) {
+      window.clearTimeout(pressRef.current.timer);
+    }
+    pressRef.current = null;
+  }
+
+  function startMove(pointerId: number, date: string, rangeId: string, minutes: number) {
+    setDragState({
+      pointerId,
+      date,
+      anchorMinutes: minutes,
+      edgeMinutes: minutes,
+      mode: "move",
+      rangeId,
+    });
+  }
+
+  useEffect(() => {
+    if (drag?.mode !== "move") {
+      return;
+    }
+    const preventScroll = (event: TouchEvent) => event.preventDefault();
+    document.addEventListener("touchmove", preventScroll, { passive: false });
+    return () => document.removeEventListener("touchmove", preventScroll);
+  }, [drag?.mode]);
+
+  useEffect(() => () => clearPress(), []);
 
   function currentDuration(): DurationMode {
     if (duration.kind === "custom") {
@@ -255,54 +303,124 @@ export function AvailabilityCalendar({
           onFocusCell={setFocusCell}
           onKeyDown={onGridKeyDown}
           onToggleAllDay={(date) => onChange(toggleAllDay(groups, date))}
+          movingRangeId={drag?.mode === "move" ? drag.rangeId : undefined}
           onHover={setHover}
           onPointerDown={(event, date, minutes) => {
+            const existing = findSlotContaining(groups, date, minutes);
             if (event.pointerType === "touch") {
-              touchRef.current = { x: event.clientX, y: event.clientY };
+              pressRef.current = {
+                pointerId: event.pointerId,
+                date,
+                minutes,
+                x: event.clientX,
+                y: event.clientY,
+                rangeId: existing?.id,
+                target: event.currentTarget,
+                timer: existing
+                  ? window.setTimeout(() => {
+                      const press = pressRef.current;
+                      if (!press?.rangeId) {
+                        return;
+                      }
+                      press.target.setPointerCapture(press.pointerId);
+                      startMove(press.pointerId, press.date, press.rangeId, press.minutes);
+                    }, LONG_PRESS_MS)
+                  : undefined,
+              };
               return;
             }
+
             event.currentTarget.setPointerCapture(event.pointerId);
-            const existing = findSlotContaining(groups, date, minutes);
-            const next = {
+            if (existing) {
+              pressRef.current = {
+                pointerId: event.pointerId,
+                date,
+                minutes,
+                x: event.clientX,
+                y: event.clientY,
+                rangeId: existing.id,
+                target: event.currentTarget,
+              };
+              return;
+            }
+
+            setDragState({
               pointerId: event.pointerId,
               date,
               anchorMinutes: minutes,
               edgeMinutes: minutes,
-              mode: existing ? ("remove" as const) : ("add" as const),
-            };
-            setDragState(next);
+              mode: "add",
+            });
           }}
           onPointerMove={(event, date, minutes) => {
+            const press = pressRef.current;
             const active = dragRef.current;
-            if (
-              active &&
-              active.mode === "add" &&
-              event.pointerId === active.pointerId &&
-              active.date === date
-            ) {
-              setDragState({ ...active, edgeMinutes: minutes });
+            const travel = press
+              ? Math.hypot(event.clientX - press.x, event.clientY - press.y)
+              : 0;
+
+            if (press && !active) {
+              if (event.pointerType === "touch" && travel > TOUCH_SCROLL_PX) {
+                clearPress();
+                return;
+              }
+              if (event.pointerType !== "touch" && press.rangeId && travel > MOUSE_DRAG_PX) {
+                startMove(press.pointerId, press.date, press.rangeId, press.minutes);
+              } else {
+                return;
+              }
+            }
+
+            const current = dragRef.current;
+            if (!current || event.pointerId !== current.pointerId) {
+              return;
+            }
+
+            if (current.mode === "move") {
+              const hit = hitTestDay(event.clientX, event.clientY, snap);
+              if (hit) {
+                setDragState({ ...current, date: hit.date, edgeMinutes: hit.minutes });
+              }
+              return;
+            }
+
+            if (current.mode === "add" && current.date === date) {
+              setDragState({ ...current, edgeMinutes: minutes });
             }
           }}
           onPointerCancel={() => {
-            touchRef.current = null;
+            clearPress();
             setDragState(null);
           }}
           onPointerUp={(event, date, minutes) => {
-            if (event.pointerType === "touch") {
-              const start = touchRef.current;
-              touchRef.current = null;
-              if (!start) {
-                return;
-              }
-              const moved = Math.hypot(event.clientX - start.x, event.clientY - start.y);
-              if (moved > 12) {
-                return;
-              }
-              applySelection(date, minutes, minutes);
+            const press = pressRef.current;
+            const active = dragRef.current;
+            clearPress();
+
+            if (active && event.pointerId === active.pointerId && active.mode === "move" && active.rangeId) {
+              onChange(moveSlot(groups, active.rangeId, active.date, active.edgeMinutes, snap));
+              setDragState(null);
               return;
             }
-            const active = dragRef.current;
-            if (active && event.pointerId === active.pointerId) {
+
+            if (event.pointerType === "touch") {
+              if (press) {
+                const travel = Math.hypot(event.clientX - press.x, event.clientY - press.y);
+                if (travel <= TOUCH_SCROLL_PX) {
+                  applySelection(date, minutes, minutes);
+                }
+              }
+              setDragState(null);
+              return;
+            }
+
+            if (press?.rangeId && !active) {
+              applySelection(press.date, press.minutes, press.minutes);
+              setDragState(null);
+              return;
+            }
+
+            if (active && event.pointerId === active.pointerId && active.mode === "add") {
               applySelection(active.date, active.anchorMinutes, active.edgeMinutes);
             }
             setDragState(null);
@@ -325,6 +443,7 @@ function WeekGrid({
   onFocusCell,
   onKeyDown,
   onToggleAllDay,
+  movingRangeId,
   onHover,
   onPointerDown,
   onPointerMove,
@@ -342,6 +461,7 @@ function WeekGrid({
   onFocusCell: (cell: { dayIndex: number; minutes: number }) => void;
   onKeyDown: (event: React.KeyboardEvent<HTMLDivElement>) => void;
   onToggleAllDay: (date: string) => void;
+  movingRangeId?: string;
   onHover: (hover: { date: string; minutes: number } | null) => void;
   onPointerDown: (event: React.PointerEvent<HTMLDivElement>, date: string, minutes: number) => void;
   onPointerMove: (event: React.PointerEvent<HTMLDivElement>, date: string, minutes: number) => void;
@@ -349,34 +469,28 @@ function WeekGrid({
   onPointerCancel: () => void;
 }) {
   const today = useToday();
+  const weekStart = days[0] ? toDateKey(days[0]) : "";
 
   return (
-    <div className="min-w-0 max-w-full overflow-x-auto rounded-xl border border-border bg-white">
-      <div className="min-w-[46rem]">
-        <div className="grid border-b border-border" style={calendarGridTemplate}>
-          <div className="border-r border-border" />
-          {days.map((day) => {
-            const { past, current } = dayHighlight(day, today);
-            return (
-              <div
-                key={toDateKey(day)}
-                className={cn(
-                  "border-r border-border px-2 py-2 text-center last:border-r-0",
-                  past && "bg-stone-50 text-muted",
-                  current && "bg-teal-50 text-accent",
-                )}
-              >
-                <p className="text-[11px] font-medium uppercase tracking-wide">
-                  {format(day, "EEE")}
-                </p>
-                <p className={cn("text-lg font-semibold", current && "text-accent")}>
-                  {format(day, "d")}
-                </p>
-              </div>
-            );
-          })}
-        </div>
-
+    <WeekCalendarShell
+      days={days}
+      scrollTopPx={DEFAULT_SCROLL_HOUR * HOUR_HEIGHT_PX}
+      scrollResetKey={weekStart}
+      slotOffsetsPx={days.flatMap((day) => {
+        const group = groups.find((item) => item.date === toDateKey(day));
+        const ranges = group ? timedRanges(group.ranges) : [];
+        const previewForDay = preview.filter((slot) => slot.date === toDateKey(day));
+        return [...ranges, ...previewForDay].flatMap((range) => {
+          const minutes = timeToMinutes(range.start);
+          return minutes === null ? [] : [slotOffsetPx(minutes)];
+        });
+      })}
+      ariaLabel="Candidate times"
+      tabIndex={0}
+      onFocus={onFocus}
+      onBlur={onBlur}
+      onKeyDown={onKeyDown}
+      allDay={
         <div className="grid border-b border-border" style={calendarGridTemplate}>
           <div className="flex items-center justify-end border-r border-border px-2 py-2 text-xs text-muted">
             All day
@@ -405,103 +519,92 @@ function WeekGrid({
             );
           })}
         </div>
-
-        <CalendarScrollArea
-          scrollTopPx={DEFAULT_SCROLL_HOUR * HOUR_HEIGHT_PX}
-          slotOffsetsPx={days.flatMap((day) => {
-            const group = groups.find((item) => item.date === toDateKey(day));
-            const ranges = group ? timedRanges(group.ranges) : [];
-            const previewForDay = preview.filter((slot) => slot.date === toDateKey(day));
-            return [...ranges, ...previewForDay].flatMap((range) => {
-              const minutes = timeToMinutes(range.start);
-              return minutes === null ? [] : [slotOffsetPx(minutes)];
-            });
-          })}
-          role="grid"
-          aria-label="Candidate times"
-          tabIndex={0}
-          onFocus={onFocus}
-          onBlur={onBlur}
-          onKeyDown={onKeyDown}
-        >
-          <div className="grid" style={{ ...calendarGridTemplate, height: GRID_HEIGHT }}>
-            <div className="relative border-r border-border">
-              {HOURS.map((hour) => (
-                <div
-                  key={hour}
-                  className="absolute right-2 text-[11px] text-muted"
-                  style={{ top: hour * HOUR_HEIGHT_PX - (hour === 0 ? 0 : 8) }}
-                >
-                  {formatHourLabel(hour)}
-                </div>
-              ))}
+      }
+    >
+      <div
+        className={cn("grid", movingRangeId && "touch-none")}
+        style={{ ...calendarGridTemplate, height: GRID_HEIGHT }}
+      >
+        <div className="relative border-r border-border">
+          {HOURS.map((hour) => (
+            <div
+              key={hour}
+              className="absolute right-2 text-[11px] text-muted"
+              style={{ top: hour * HOUR_HEIGHT_PX - (hour === 0 ? 0 : 8) }}
+            >
+              {formatHourLabel(hour)}
             </div>
-            {days.map((day, dayIndex) => {
-              const date = toDateKey(day);
-              const group = groups.find((item) => item.date === date);
-              const ranges = group ? timedRanges(group.ranges) : [];
-              const dayPreview = preview.filter((slot) => slot.date === date);
-              const { past, current } = dayHighlight(day, today);
+          ))}
+        </div>
+        {days.map((day, dayIndex) => {
+          const date = toDateKey(day);
+          const group = groups.find((item) => item.date === date);
+          const ranges = (group ? timedRanges(group.ranges) : []).filter(
+            (range) => range.id !== movingRangeId,
+          );
+          const dayPreview = preview.filter((slot) => slot.date === date);
+          const { past, current } = dayHighlight(day, today);
 
-              return (
+          return (
+            <div
+              key={date}
+              data-date={date}
+              role="presentation"
+              className={cn(
+                "relative cursor-pointer select-none border-r border-border last:border-r-0",
+                past && "bg-stone-50/80",
+                current && "bg-teal-50/40",
+                movingRangeId && "cursor-grabbing",
+              )}
+              style={{
+                backgroundImage: hourLines,
+                backgroundSize: `100% ${HOUR_HEIGHT_PX}px, 100% ${HOUR_HEIGHT_PX}px`,
+                backgroundPosition: `0 0, 0 ${HOUR_HEIGHT_PX / 2}px`,
+              }}
+              onContextMenu={(event) => event.preventDefault()}
+              onPointerDown={(event) => {
+                const minutes = minutesFromPointer(event, snap);
+                onFocusCell({ dayIndex, minutes });
+                onPointerDown(event, date, minutes);
+              }}
+              onPointerMove={(event) => {
+                const minutes = minutesFromPointer(event, snap);
+                onHover({ date, minutes });
+                onPointerMove(event, date, minutes);
+              }}
+              onPointerUp={(event) => {
+                const minutes = minutesFromPointer(event, snap);
+                onPointerUp(event, date, minutes);
+                onHover(null);
+              }}
+              onPointerCancel={onPointerCancel}
+              onPointerLeave={() => onHover(null)}
+            >
+              {ranges.map((range) => (
+                <SlotBlock key={range.id} start={range.start} end={range.end} solid />
+              ))}
+              {dayPreview.map((slot) => (
+                <SlotBlock
+                  key={`preview-${slot.start}-${slot.end}`}
+                  start={slot.start}
+                  end={slot.end}
+                  solid={false}
+                />
+              ))}
+              {focusCell && focusCell.dayIndex === dayIndex && !allDayMode ? (
                 <div
-                  key={date}
-                  role="presentation"
-                  className={cn(
-                    "relative cursor-pointer select-none border-r border-border last:border-r-0",
-                    past && "bg-stone-50/80",
-                    current && "bg-teal-50/40",
-                  )}
+                  className="pointer-events-none absolute inset-x-0 z-10 border-2 border-accent"
                   style={{
-                    backgroundImage: hourLines,
-                    backgroundSize: `100% ${HOUR_HEIGHT_PX}px, 100% ${HOUR_HEIGHT_PX}px`,
-                    backgroundPosition: `0 0, 0 ${HOUR_HEIGHT_PX / 2}px`,
+                    top: focusCell.minutes * (HOUR_HEIGHT_PX / 60),
+                    height: snap * (HOUR_HEIGHT_PX / 60),
                   }}
-                  onPointerDown={(event) => {
-                    const minutes = minutesFromPointer(event, snap);
-                    onFocusCell({ dayIndex, minutes });
-                    onPointerDown(event, date, minutes);
-                  }}
-                  onPointerMove={(event) => {
-                    const minutes = minutesFromPointer(event, snap);
-                    onHover({ date, minutes });
-                    onPointerMove(event, date, minutes);
-                  }}
-                  onPointerUp={(event) => {
-                    const minutes = minutesFromPointer(event, snap);
-                    onPointerUp(event, date, minutes);
-                    onHover(null);
-                  }}
-                  onPointerCancel={onPointerCancel}
-                  onPointerLeave={() => onHover(null)}
-                >
-                  {ranges.map((range) => (
-                    <SlotBlock key={range.id} start={range.start} end={range.end} solid />
-                  ))}
-                  {dayPreview.map((slot) => (
-                    <SlotBlock
-                      key={`preview-${slot.start}-${slot.end}`}
-                      start={slot.start}
-                      end={slot.end}
-                      solid={false}
-                    />
-                  ))}
-                  {focusCell && focusCell.dayIndex === dayIndex && !allDayMode ? (
-                    <div
-                      className="pointer-events-none absolute inset-x-0 z-10 border-2 border-accent"
-                      style={{
-                        top: focusCell.minutes * (HOUR_HEIGHT_PX / 60),
-                        height: snap * (HOUR_HEIGHT_PX / 60),
-                      }}
-                    />
-                  ) : null}
-                </div>
-              );
-            })}
-          </div>
-        </CalendarScrollArea>
+                />
+              ) : null}
+            </div>
+          );
+        })}
       </div>
-    </div>
+    </WeekCalendarShell>
   );
 }
 
@@ -622,6 +725,17 @@ function minutesFromPointer(event: React.PointerEvent<HTMLDivElement>, snap: num
   return snapMinutes(y / (HOUR_HEIGHT_PX / 60), snap);
 }
 
+function hitTestDay(clientX: number, clientY: number, snap: number) {
+  const node = document.elementFromPoint(clientX, clientY);
+  const column = node instanceof Element ? node.closest("[data-date]") : null;
+  if (!(column instanceof HTMLElement) || !column.dataset.date) {
+    return null;
+  }
+  const rect = column.getBoundingClientRect();
+  const minutes = snapMinutes((clientY - rect.top) / (HOUR_HEIGHT_PX / 60), snap);
+  return { date: column.dataset.date, minutes };
+}
+
 function minutesOrZero(time: string) {
   const match = /^(\d{1,2}):(\d{2})$/.exec(time);
   if (!match) {
@@ -638,6 +752,16 @@ function previewSlots(
   snap: number,
   durationMinutes: number,
 ) {
+  if (drag?.mode === "move" && drag.rangeId) {
+    for (const group of groups) {
+      const range = group.ranges.find((item) => item.id === drag.rangeId);
+      if (range) {
+        const next = relocatedRange(range, drag.date, drag.edgeMinutes, snap);
+        return next ? [next] : [];
+      }
+    }
+    return [];
+  }
   if (duration.kind === "all-day") {
     return [];
   }

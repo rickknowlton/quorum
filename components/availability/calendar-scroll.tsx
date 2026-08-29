@@ -18,15 +18,21 @@ export function scrollTopForSlots(startTimes: string[]) {
   return hour * HOUR_HEIGHT_PX;
 }
 
+const scrollMemory = new Map<string, number>();
+
 export function CalendarScrollArea({
   slotOffsetsPx,
   scrollTopPx,
+  scrollResetKey,
+  overlayOffsetTop = 0,
   className,
   children,
   ...props
 }: {
   slotOffsetsPx: number[];
   scrollTopPx?: number;
+  scrollResetKey?: string;
+  overlayOffsetTop?: number;
   children: ReactNode;
 } & HTMLAttributes<HTMLDivElement>) {
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -39,9 +45,14 @@ export function CalendarScrollArea({
       return;
     }
 
-    if (scrollTopPx !== undefined) {
+    const memoryKey = scrollResetKey ?? "__init__";
+    const remembered = scrollMemory.get(memoryKey);
+    if (remembered !== undefined) {
+      scroller.scrollTop = remembered;
+    } else if (scrollTopPx !== undefined) {
       scroller.scrollTop = scrollTopPx;
     }
+    scrollMemory.set(memoryKey, scroller.scrollTop);
 
     const offsets = offsetsKey
       ? offsetsKey.split(",").map((value) => Number(value))
@@ -56,7 +67,7 @@ export function CalendarScrollArea({
         if (offset + 12 < top) {
           above = true;
         }
-        if (offset > bottom - 12) {
+        if (offset + overlayOffsetTop > bottom - 12) {
           below = true;
         }
       }
@@ -66,7 +77,10 @@ export function CalendarScrollArea({
     }
 
     sync(scroller);
-    const onScroll = () => sync(scroller);
+    const onScroll = () => {
+      scrollMemory.set(memoryKey, scroller.scrollTop);
+      sync(scroller);
+    };
     scroller.addEventListener("scroll", onScroll, { passive: true });
     const observer = new ResizeObserver(() => sync(scroller));
     observer.observe(scroller);
@@ -74,12 +88,15 @@ export function CalendarScrollArea({
       scroller.removeEventListener("scroll", onScroll);
       observer.disconnect();
     };
-  }, [offsetsKey, scrollTopPx]);
+  }, [offsetsKey, overlayOffsetTop, scrollResetKey, scrollTopPx]);
 
   return (
     <div className="relative">
       {edges.above ? (
-        <div className="pointer-events-none absolute inset-x-0 top-0 z-30 flex h-10 items-start justify-center bg-gradient-to-b from-white to-transparent pt-1">
+        <div
+          className="pointer-events-none absolute inset-x-0 z-30 flex h-10 items-start justify-center bg-gradient-to-b from-white to-transparent pt-1"
+          style={{ top: overlayOffsetTop }}
+        >
           <span className="rounded-full bg-stone-800/80 px-2 py-0.5 text-[11px] font-medium text-white">
             More times above
           </span>
@@ -88,7 +105,10 @@ export function CalendarScrollArea({
       <div
         {...props}
         ref={scrollerRef}
-        className={cn("max-h-[36rem] overflow-y-auto touch-pan-y", className)}
+        className={cn(
+          "max-h-[36rem] overflow-auto overscroll-contain [overflow-anchor:none]",
+          className,
+        )}
       >
         {children}
       </div>

@@ -24,8 +24,17 @@ export default async function DashboardPage() {
     <PageShell>
       <SiteHeader
         action={
-          <LinkButton href="/create" variant="secondary" size="sm">
-            Create a poll
+          <LinkButton
+            href="/create"
+            variant="ghost"
+            size="sm"
+            className="whitespace-nowrap"
+            aria-label="Create a poll"
+          >
+            <span className="sm:hidden" aria-hidden="true">
+              Create
+            </span>
+            <span className="max-sm:hidden">Create a poll</span>
           </LinkButton>
         }
       />

@@ -11,11 +11,11 @@ export function SiteHeader({
 }) {
   return (
     <header className="border-b border-border/80 bg-surface/80 backdrop-blur">
-      <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-4">
-        <Link href="/" className="font-serif text-2xl tracking-tight text-foreground">
+      <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3">
+        <Link href="/" className="shrink-0 font-serif text-2xl tracking-tight text-foreground">
           Quorum
         </Link>
-        <div className="flex min-w-0 items-center gap-2">
+        <div className="flex min-w-0 items-center justify-end gap-1 sm:gap-2">
           {action}
           {showAuth ? <OrganizerNav /> : null}
         </div>
