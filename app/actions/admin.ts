@@ -11,7 +11,7 @@ import {
   questions,
 } from "@/db/schema";
 import { getOrganizerAccess } from "@/lib/auth/access";
-import { adminCookieName, AUTH_COOKIE_OPTIONS } from "@/lib/auth/tokens";
+import { adminCookieName, AUTH_COOKIE_OPTIONS, editCookieName, tokensEqual } from "@/lib/auth/tokens";
 import { isDatabaseUnavailable } from "@/lib/db/connection-error";
 import { wallTimeToUtc } from "@/lib/dates/format";
 import { followUpValues, parseShowIf } from "@/lib/polls/question-settings";
@@ -123,6 +123,15 @@ export async function deleteParticipantAction(
   const access = await requireAdminPoll(publicId, token);
   if ("error" in access) {
     throw new Error(access.error);
+  }
+
+  const existing = await db.query.participants.findFirst({
+    where: and(eq(participants.id, participantId), eq(participants.pollId, access.poll.id)),
+  });
+  const cookieStore = await cookies();
+  const cookieToken = cookieStore.get(editCookieName(publicId))?.value;
+  if (existing && cookieToken && tokensEqual(cookieToken, existing.editToken)) {
+    cookieStore.delete(editCookieName(publicId));
   }
 
   await db

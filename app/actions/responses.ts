@@ -15,6 +15,7 @@ import {
   hasInvalidMaybeVotes,
   type QuestionAnswer,
 } from "@/lib/responses/validate";
+import { resolveSubmitMode } from "@/lib/responses/submit-mode";
 import { submitResponseSchema } from "@/lib/validation/poll";
 
 function flattenZodError(error: { issues: Array<{ message: string }> }) {
@@ -59,8 +60,9 @@ export async function submitResponseAction(publicId: string, input: unknown) {
   }
 
   const cookieStore = await cookies();
+  const formToken = parsed.data.editToken?.trim() || undefined;
   const cookieToken = cookieStore.get(editCookieName(publicId))?.value;
-  const presentedToken = parsed.data.editToken || cookieToken;
+  const presentedToken = formToken ?? cookieToken;
 
   try {
     const editToken = await db.transaction(async (tx) => {
@@ -71,15 +73,21 @@ export async function submitResponseAction(publicId: string, input: unknown) {
           }
         | undefined;
 
-      if (presentedToken) {
-        const existing = await tx.query.participants.findFirst({
-          where: and(eq(participants.pollId, poll.id), eq(participants.editToken, presentedToken)),
-        });
+      const existing = presentedToken
+        ? await tx.query.participants.findFirst({
+            where: and(eq(participants.pollId, poll.id), eq(participants.editToken, presentedToken)),
+          })
+        : undefined;
+      const matches = Boolean(
+        existing && presentedToken && tokensEqual(presentedToken, existing.editToken),
+      );
+      const mode = resolveSubmitMode(formToken, matches);
 
-        if (!existing || !tokensEqual(presentedToken, existing.editToken)) {
-          return { error: "This edit link is invalid." };
-        }
+      if (mode === "invalid-edit-link") {
+        return { error: "This edit link is invalid." };
+      }
 
+      if (mode === "edit" && existing) {
         if (!poll.allowResponseEditing) {
           return { error: "This poll does not allow editing responses." };
         }
