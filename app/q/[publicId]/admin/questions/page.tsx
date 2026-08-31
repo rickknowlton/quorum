@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { privatePageMetadata } from "@/lib/seo/metadata";
 import { EditQuestionsForm } from "@/components/poll/edit-questions-form";
 import { ClaimAdminCookie } from "@/components/poll/claim-admin-cookie";
 import { LinkButton } from "@/components/ui/button";
@@ -12,9 +13,7 @@ import type { PollRouteProps } from "@/lib/polls/page-props";
 
 type Props = PollRouteProps;
 
-export const metadata: Metadata = {
-  title: "Edit questions",
-};
+export const metadata: Metadata = privatePageMetadata("Edit questions");
 
 export default async function AdminQuestionsPage({ params, searchParams }: Props) {
   const { publicId } = await params;

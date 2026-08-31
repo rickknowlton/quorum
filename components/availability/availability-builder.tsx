@@ -123,7 +123,7 @@ export function AvailabilityBuilder({
                             />
                           </div>
                           <span className="hidden text-muted sm:mb-3 sm:inline" aria-hidden="true">
-                            –
+                            -
                           </span>
                           <div className="min-w-0">
                             <Label htmlFor={`end-${range.id}`}>End</Label>

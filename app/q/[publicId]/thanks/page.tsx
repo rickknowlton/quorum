@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { LinkButton } from "@/components/ui/button";
 import { Card, Main, PageShell, SiteHeader } from "@/components/ui/shell";
+import { privatePageMetadata } from "@/lib/seo/metadata";
 import { editCookieName, tokensEqual } from "@/lib/auth/tokens";
 import { getPollByPublicId } from "@/lib/polls/queries";
 import { editPath, participantPath, resultsPath } from "@/lib/polls/paths";
@@ -11,9 +13,7 @@ import type { PollRouteProps } from "@/lib/polls/page-props";
 
 type Props = PollRouteProps;
 
-export const metadata: Metadata = {
-  title: "Response saved",
-};
+export const metadata: Metadata = privatePageMetadata("Response saved");
 
 export default async function ThanksPage({ params }: Props) {
   const { publicId } = await params;
@@ -61,6 +61,13 @@ export default async function ThanksPage({ params }: Props) {
               <span className="mt-2 inline-block break-all text-foreground">{editUrl}</span>
             </p>
           ) : null}
+
+          <p className="mt-8 border-t border-border pt-6 text-sm text-muted">
+            Need to organize your own group?{" "}
+            <Link href="/create" className="font-medium text-foreground underline-offset-4 hover:underline">
+              Create a Quorum
+            </Link>
+          </p>
         </Card>
       </Main>
     </PageShell>

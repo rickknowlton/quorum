@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { OrganizerNav } from "@/components/auth/organizer-nav";
 import { cn } from "@/lib/cn";
+import { GITHUB_URL } from "@/lib/seo/site";
 
 export function SiteHeader({
   action,
@@ -24,8 +25,41 @@ export function SiteHeader({
   );
 }
 
+export function SiteFooter() {
+  return (
+    <footer className="mt-auto border-t border-border/80">
+      <div className="mx-auto flex max-w-5xl flex-col gap-3 px-4 py-6 sm:flex-row sm:items-center sm:justify-between">
+        <Link href="/" className="shrink-0 font-serif text-xl tracking-tight text-foreground">
+          Quorum
+        </Link>
+        <nav className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted">
+          <Link href="/about" className="hover:text-foreground">
+            Why Quorum
+          </Link>
+          <Link href="/privacy" className="hover:text-foreground">
+            Privacy
+          </Link>
+          <a
+            href={GITHUB_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="hover:text-foreground"
+          >
+            GitHub
+          </a>
+        </nav>
+      </div>
+    </footer>
+  );
+}
+
 export function PageShell({ children }: { children: React.ReactNode }) {
-  return <div className="flex min-h-full min-w-0 flex-col overflow-x-hidden">{children}</div>;
+  return (
+    <div className="flex min-h-full min-w-0 flex-col overflow-x-hidden">
+      {children}
+      <SiteFooter />
+    </div>
+  );
 }
 
 export function Main({

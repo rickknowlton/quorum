@@ -2,6 +2,15 @@ import { desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { participants, polls } from "@/db/schema";
 
+export async function getPollPublicMeta(publicId: string) {
+  return db.query.polls.findFirst({
+    where: eq(polls.publicId, publicId),
+    columns: {
+      title: true,
+    },
+  });
+}
+
 export async function getPollByPublicId(publicId: string) {
   return db.query.polls.findFirst({
     where: eq(polls.publicId, publicId),

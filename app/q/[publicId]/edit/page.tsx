@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
+import { PublicPollCredit } from "@/components/marketing/public-poll-credit";
 import { RespondForm } from "@/components/poll/respond-form";
 import { Card, Main, PageShell, SiteHeader } from "@/components/ui/shell";
+import { privatePageMetadata } from "@/lib/seo/metadata";
 import { editCookieName, tokensEqual } from "@/lib/auth/tokens";
 import { getParticipantByEditToken, getPollByPublicId } from "@/lib/polls/queries";
 import { isAcceptingResponses, pollAcceptanceMessage } from "@/lib/polls/status";
@@ -11,9 +13,7 @@ import type { PollRouteProps } from "@/lib/polls/page-props";
 
 type Props = PollRouteProps;
 
-export const metadata: Metadata = {
-  title: "Edit response",
-};
+export const metadata: Metadata = privatePageMetadata("Edit response");
 
 export default async function EditResponsePage({ params, searchParams }: Props) {
   const { publicId } = await params;
@@ -61,6 +61,7 @@ export default async function EditResponsePage({ params, searchParams }: Props) 
             />
           </div>
         )}
+        <PublicPollCredit />
       </Main>
     </PageShell>
   );

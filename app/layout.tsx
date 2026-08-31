@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Instrument_Serif, Geist } from "next/font/google";
 import { clerkAppearance } from "@/lib/auth/clerk-appearance";
 import { clerkPublishableKey } from "@/lib/auth/clerk-env";
+import { rootMetadata } from "@/lib/seo/metadata";
 import "./globals.css";
 
 const sans = Geist({
@@ -16,14 +17,7 @@ const serif = Instrument_Serif({
   weight: "400",
 });
 
-export const metadata: Metadata = {
-  title: {
-    default: "Quorum",
-    template: "%s · Quorum",
-  },
-  description:
-    "Make a decision with a group. Participants don’t need an account.",
-};
+export const metadata: Metadata = rootMetadata;
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (

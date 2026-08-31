@@ -192,16 +192,16 @@ describe("flattenRanges", () => {
 
 describe("labels", () => {
   it("formats compact in-block time ranges", () => {
-    expect(formatCompactRange("12:00", "13:00")).toBe("12–1 PM");
-    expect(formatCompactRange("12:00", "13:30")).toBe("12–1:30 PM");
-    expect(formatCompactRange("11:00", "13:00")).toBe("11 AM–1 PM");
+    expect(formatCompactRange("12:00", "13:00")).toBe("12-1 PM");
+    expect(formatCompactRange("12:00", "13:30")).toBe("12-1:30 PM");
+    expect(formatCompactRange("11:00", "13:00")).toBe("11 AM-1 PM");
     expect(formatCompactRange("00:00", "23:59")).toBe("All day");
   });
 
   it("formats a week spanning two months", () => {
     const days = weekDaysFrom(new Date(2026, 7, 30));
     expect(toDateKey(days[0]!)).toBe("2026-08-30");
-    expect(formatWeekRangeLabel(days)).toBe("Aug 30 – Sep 5");
+    expect(formatWeekRangeLabel(days)).toBe("Aug 30 - Sep 5");
   });
 
   it("counts times that fall outside the visible week", () => {

@@ -6,18 +6,20 @@ import { LinkButton } from "@/components/ui/button";
 import { Card, Main, PageShell, SiteHeader } from "@/components/ui/shell";
 import { editCookieName, tokensEqual } from "@/lib/auth/tokens";
 import { timezoneLabel } from "@/lib/dates/format";
-import { getPollByPublicId } from "@/lib/polls/queries";
+import { getPollByPublicId, getPollPublicMeta } from "@/lib/polls/queries";
 import { isAcceptingResponses, pollAcceptanceMessage } from "@/lib/polls/status";
 import { resultsPath } from "@/lib/polls/paths";
 import { answersFromParticipant } from "@/lib/responses/hydrate";
 import type { PollRouteProps } from "@/lib/polls/page-props";
+import { PublicPollCredit } from "@/components/marketing/public-poll-credit";
+import { pollShareMetadata } from "@/lib/seo/metadata";
 
 type Props = PollRouteProps;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { publicId } = await params;
-  const poll = await getPollByPublicId(publicId);
-  return { title: poll?.title ?? "Poll" };
+  const poll = await getPollPublicMeta(publicId);
+  return pollShareMetadata(poll?.title ?? "Poll", publicId);
 }
 
 export default async function PollPage({ params }: Props) {
@@ -37,7 +39,7 @@ export default async function PollPage({ params }: Props) {
   return (
     <PageShell>
       <SiteHeader />
-        <Main className="mx-auto w-full max-w-5xl px-4 py-10 sm:py-14">
+      <Main className="mx-auto w-full max-w-5xl px-4 py-10 sm:py-14">
         <p className="text-xs font-medium uppercase tracking-wide text-muted">Quorum poll</p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight">{poll.title}</h1>
         {poll.description ? (
@@ -82,6 +84,7 @@ export default async function PollPage({ params }: Props) {
             />
           </div>
         )}
+        <PublicPollCredit />
       </Main>
     </PageShell>
   );

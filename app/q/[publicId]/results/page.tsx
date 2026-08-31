@@ -3,16 +3,20 @@ import { notFound } from "next/navigation";
 import { ResultsList } from "@/components/results/results-list";
 import { Card, Main, PageShell, SiteHeader } from "@/components/ui/shell";
 import { LinkButton } from "@/components/ui/button";
-import { getPollByPublicId } from "@/lib/polls/queries";
+import { getPollByPublicId, getPollPublicMeta } from "@/lib/polls/queries";
 import { participantPath } from "@/lib/polls/paths";
 import { buildPollResults } from "@/lib/results/build";
 import type { PollRouteProps } from "@/lib/polls/page-props";
+import { PublicPollCredit } from "@/components/marketing/public-poll-credit";
+import { resultsShareMetadata } from "@/lib/seo/metadata";
 
 type Props = PollRouteProps;
 
-export const metadata: Metadata = {
-  title: "Results",
-};
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { publicId } = await params;
+  const poll = await getPollPublicMeta(publicId);
+  return resultsShareMetadata(poll?.title ?? "Results", publicId);
+}
 
 export default async function ResultsPage({ params }: Props) {
   const { publicId } = await params;
@@ -37,6 +41,7 @@ export default async function ResultsPage({ params }: Props) {
               </LinkButton>
             </div>
           </Card>
+          <PublicPollCredit />
         </Main>
       </PageShell>
     );
@@ -55,6 +60,7 @@ export default async function ResultsPage({ params }: Props) {
             showNames={poll.showParticipantNames}
           />
         </div>
+        <PublicPollCredit />
       </Main>
     </PageShell>
   );

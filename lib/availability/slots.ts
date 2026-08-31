@@ -111,9 +111,9 @@ export function formatWeekRangeLabel(days: Date[]) {
     return "";
   }
   if (start.getMonth() === end.getMonth()) {
-    return `${format(start, "MMMM d")} – ${format(end, "d")}`;
+    return `${format(start, "MMMM d")} - ${format(end, "d")}`;
   }
-  return `${format(start, "MMM d")} – ${format(end, "MMM d")}`;
+  return `${format(start, "MMM d")} - ${format(end, "MMM d")}`;
 }
 
 export function formatHourLabel(hour: number) {
@@ -174,7 +174,7 @@ export function formatCompactRange(start: string, end: string) {
   const startParts = clockParts(start);
   const endParts = clockParts(end);
   if (!startParts || !endParts) {
-    return `${start}–${end}`;
+    return `${start}-${end}`;
   }
 
   const startLabel =
@@ -183,10 +183,10 @@ export function formatCompactRange(start: string, end: string) {
     endParts.minutes === 0 ? String(endParts.hours12) : `${endParts.hours12}:${pad(endParts.minutes)}`;
 
   if (startParts.meridiem === endParts.meridiem) {
-    return `${startLabel}–${endLabel} ${endParts.meridiem}`;
+    return `${startLabel}-${endLabel} ${endParts.meridiem}`;
   }
 
-  return `${startLabel} ${startParts.meridiem}–${endLabel} ${endParts.meridiem}`;
+  return `${startLabel} ${startParts.meridiem}-${endLabel} ${endParts.meridiem}`;
 }
 
 function pad(value: number) {

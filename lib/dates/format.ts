@@ -50,10 +50,10 @@ export function formatTimeRange(
   const endMeridiem = format(end, "a");
 
   if (startMeridiem === endMeridiem) {
-    return `${format(start, "h:mm")}–${endLabel}`;
+    return `${format(start, "h:mm")}-${endLabel}`;
   }
 
-  return `${startLabel}–${endLabel}`;
+  return `${startLabel}-${endLabel}`;
 }
 
 export function formatOptionLabel(

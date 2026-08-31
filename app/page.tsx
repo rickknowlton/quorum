@@ -1,4 +1,8 @@
-import { Check } from "lucide-react";
+import { UseCaseCards } from "@/components/marketing/use-case-cards";
+import { ProductDemo } from "@/components/marketing/product-demo";
+import { QuestionTypes } from "@/components/marketing/question-types";
+import { ResultsPreview } from "@/components/marketing/results-preview";
+import { OriginStory } from "@/components/marketing/origin-story";
 import { LinkButton } from "@/components/ui/button";
 import { Main, PageShell, SiteHeader } from "@/components/ui/shell";
 
@@ -21,7 +25,7 @@ export default function HomePage() {
           </LinkButton>
         }
       />
-      <Main className="mx-auto w-full max-w-4xl px-4 py-16 sm:py-24">
+      <Main className="mx-auto w-full max-w-5xl px-4 py-16 sm:py-24">
         <section className="max-w-2xl">
           <p className="font-serif text-5xl tracking-tight text-foreground sm:text-6xl">Quorum</p>
           <h1 className="mt-6 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
@@ -30,31 +34,21 @@ export default function HomePage() {
           <p className="mt-4 max-w-xl text-lg leading-relaxed text-muted">
             Find a time, take a vote, settle the details.
             <br />
-            Participants don’t need an account. Organizers sign in so every poll lives in one place.
+            No account needed to respond. Create a poll, share one link, and see where the group
+            agrees.
           </p>
           <div className="mt-8">
             <LinkButton href="/create">Create a poll</LinkButton>
           </div>
         </section>
 
-        <section className="mt-20 max-w-lg rounded-xl border border-border bg-surface p-6 shadow-sm">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted">Example</p>
-          <h2 className="mt-2 text-xl font-semibold">Fantasy Football Draft</h2>
-          <ul className="mt-4 space-y-3 text-foreground">
-            <li className="flex items-start gap-3">
-              <Check className="mt-0.5 size-5 text-accent" aria-hidden="true" />
-              When can everyone draft?
-            </li>
-            <li className="flex items-start gap-3">
-              <Check className="mt-0.5 size-5 text-accent" aria-hidden="true" />
-              Increase dues to $40?
-            </li>
-            <li className="flex items-start gap-3">
-              <Check className="mt-0.5 size-5 text-accent" aria-hidden="true" />
-              PPR or half-PPR?
-            </li>
-          </ul>
-        </section>
+        <div className="mt-20 space-y-20 sm:mt-28 sm:space-y-28">
+          <UseCaseCards />
+          <ProductDemo />
+          <QuestionTypes />
+          <ResultsPreview />
+          <OriginStory />
+        </div>
       </Main>
     </PageShell>
   );

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { privatePageMetadata } from "@/lib/seo/metadata";
 import { ClaimAdminCookie } from "@/components/poll/claim-admin-cookie";
 import { AdminSettingsForm } from "@/components/poll/admin-settings-form";
 import { ParticipantList } from "@/components/poll/participant-list";
@@ -17,9 +18,7 @@ import type { PollRouteProps } from "@/lib/polls/page-props";
 
 type Props = PollRouteProps;
 
-export const metadata: Metadata = {
-  title: "Organizer dashboard",
-};
+export const metadata: Metadata = privatePageMetadata("Organizer dashboard");
 
 export default async function AdminPage({ params, searchParams }: Props) {
   const { publicId } = await params;
