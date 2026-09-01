@@ -52,7 +52,7 @@ export default function AboutPage() {
             cumbersome than I wanted for a small group poll.
           </p>
           <p>
-            Our league also had other things to vote on — dues, rules, scoring changes — and using
+            Our league also had other things to vote on - dues, rules, scoring changes - and using
             separate tools for every question felt ridiculous.
           </p>
           <p>So I built one place for both.</p>
@@ -70,6 +70,27 @@ export default function AboutPage() {
             className="text-foreground underline-offset-4 hover:underline"
           >
             View on GitHub
+          </a>
+          .
+        </p>
+        <p className="mt-3 text-sm text-muted">
+          Site icon by{" "}
+          <a
+            href="https://www.flaticon.com/authors/fach"
+            target="_blank"
+            rel="noreferrer"
+            className="text-foreground underline-offset-4 hover:underline"
+          >
+            Fach
+          </a>{" "}
+          from{" "}
+          <a
+            href="https://www.flaticon.com"
+            target="_blank"
+            rel="noreferrer"
+            className="text-foreground underline-offset-4 hover:underline"
+          >
+            Flaticon
           </a>
           .
         </p>

@@ -12,6 +12,8 @@ Scheduling is one question type, not the whole product.
 
 This project is MIT licensed. See `LICENSE` and `SECURITY.md`.
 
+The current site icon is by [Fach](https://www.flaticon.com/authors/fach) from [Flaticon](https://www.flaticon.com).
+
 ## Stack
 
 - Next.js (App Router) and TypeScript
