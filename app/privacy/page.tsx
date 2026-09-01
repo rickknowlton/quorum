@@ -45,7 +45,7 @@ export default function PrivacyPage() {
         <h1 className="mt-2 font-serif text-4xl tracking-tight text-foreground sm:text-5xl">
           Privacy
         </h1>
-        <p className="mt-4 text-sm text-muted">Last updated August 31, 2026</p>
+        <p className="mt-4 text-sm text-muted">Last updated September 1, 2026</p>
 
         <div className="mt-8 space-y-8 text-lg leading-relaxed text-muted">
           <p>
@@ -76,6 +76,25 @@ export default function PrivacyPage() {
             </p>
             <p className="mt-3">
               These cookies are for running the product. Quorum does not use advertising cookies.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-semibold tracking-tight text-foreground">
+              Why Quorum stores it
+            </h2>
+            <p className="mt-3">
+              Organizer accounts are used so you can sign in and find your polls. Poll content and
+              responses are stored so the group can vote and see results.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-semibold tracking-tight text-foreground">How long</h2>
+            <p className="mt-3">
+              Data stays until the organizer or project owner deletes it, or until Quorum itself is
+              shut down. There is not yet a self-serve delete-poll control; if you need a poll
+              removed, ask on GitHub.
             </p>
           </section>
 

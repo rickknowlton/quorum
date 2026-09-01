@@ -86,7 +86,7 @@ export function isAnswerComplete(
     case "yes_no":
       return answer.value === "yes" || answer.value === "no";
     case "multiple_choice":
-      return Boolean(answer.optionId);
+      return Boolean(answer.optionId && question.optionIds.includes(answer.optionId));
     case "text":
       return answer.value.trim().length > 0;
     default:

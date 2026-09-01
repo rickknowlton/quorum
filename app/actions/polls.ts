@@ -7,7 +7,9 @@ import { polls, questionOptions, questions } from "@/db/schema";
 import { wallTimeToUtc } from "@/lib/dates/format";
 import { isDatabaseUnavailable } from "@/lib/db/connection-error";
 import { createPublicId, createSecretToken } from "@/lib/ids";
+import { hashSecret } from "@/lib/auth/tokens";
 import { followUpValues } from "@/lib/polls/question-settings";
+import { limitPollCreation } from "@/lib/rate-limit";
 import { createPollSchema, type CreatePollInput } from "@/lib/validation/poll";
 
 function flattenZodError(error: { issues: Array<{ message: string }> }) {
@@ -20,6 +22,11 @@ export async function createPollAction(
   const { isAuthenticated, userId } = await auth();
   if (!isAuthenticated || !userId) {
     return { error: "Sign in to create a poll." };
+  }
+
+  const limited = await limitPollCreation(userId);
+  if (!limited.ok) {
+    return { error: "You’re creating polls too quickly. Please wait and try again." };
   }
 
   const parsed = createPollSchema.safeParse(input);
@@ -37,7 +44,7 @@ export async function createPollAction(
         .insert(polls)
         .values({
           publicId: createPublicId(),
-          adminToken: createSecretToken(),
+          adminToken: hashSecret(createSecretToken()),
           ownerUserId: userId,
           title: data.title,
           description: data.description || null,

@@ -78,6 +78,20 @@ describe("required question validation", () => {
     expect(missing).toEqual([]);
   });
 
+  it("treats a required multiple-choice answer as incomplete when the option is not on that question", () => {
+    const missing = findMissingRequiredAnswers(questions, [
+      {
+        type: "availability",
+        questionId: "q-avail",
+        selections: { "opt-1": "yes", "opt-2": "" },
+      },
+      { type: "yes_no", questionId: "q-dues", value: "yes" },
+      { type: "multiple_choice", questionId: "q-format", optionId: "opt-1" },
+    ]);
+
+    expect(missing.map((item) => item.questionId)).toEqual(["q-format"]);
+  });
+
   it("rejects maybe votes when the poll disables them", () => {
     expect(
       hasInvalidMaybeVotes(

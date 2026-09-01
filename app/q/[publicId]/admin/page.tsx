@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { privatePageMetadata } from "@/lib/seo/metadata";
-import { ClaimAdminCookie } from "@/components/poll/claim-admin-cookie";
 import { AdminSettingsForm } from "@/components/poll/admin-settings-form";
 import { ParticipantList } from "@/components/poll/participant-list";
 import { ResultsList } from "@/components/results/results-list";
@@ -9,6 +8,7 @@ import { CopyButton } from "@/components/ui/copy-button";
 import { LinkButton } from "@/components/ui/button";
 import { Card, Main, PageShell, SiteHeader } from "@/components/ui/shell";
 import { getOrganizerAccess } from "@/lib/auth/access";
+import { claimAdminQueryToken } from "@/lib/auth/claim";
 import { timezoneLabel } from "@/lib/dates/format";
 import { getPollByPublicId } from "@/lib/polls/queries";
 import { buildPollResults } from "@/lib/results/build";
@@ -29,7 +29,14 @@ export default async function AdminPage({ params, searchParams }: Props) {
   }
 
   const queryToken = typeof query.token === "string" ? query.token : undefined;
-  const access = await getOrganizerAccess(poll, queryToken);
+  await claimAdminQueryToken({
+    publicId,
+    storedToken: poll.adminToken,
+    queryToken,
+    ownerUserId: poll.ownerUserId,
+    destination: "admin",
+  });
+  const access = await getOrganizerAccess(poll);
 
   if (!access.authorized) {
     return (
@@ -53,7 +60,6 @@ export default async function AdminPage({ params, searchParams }: Props) {
 
   return (
     <PageShell>
-      {queryToken ? <ClaimAdminCookie publicId={publicId} token={queryToken} /> : null}
       <SiteHeader
         action={
           <LinkButton
@@ -69,10 +75,10 @@ export default async function AdminPage({ params, searchParams }: Props) {
       <Main className="mx-auto w-full max-w-5xl px-4 py-10 sm:py-14">
         {access.isOwner ? null : (
           <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-950">
-            <p className="font-medium">Bookmark this organizer link.</p>
+            <p className="font-medium">This browser remembers organizer access.</p>
             <p className="mt-1">
-              You opened this poll from a private link. Keep it if you still need access without
-              signing in.
+              You opened this poll from a private link. Keep that original link if you need access
+              on another device.
             </p>
           </div>
         )}
@@ -88,7 +94,7 @@ export default async function AdminPage({ params, searchParams }: Props) {
             <p className="mt-2 text-sm text-muted">{timezoneLabel(poll.timezone)}</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <LinkButton href={adminQuestionsPath(publicId, queryToken)} variant="secondary" size="sm">
+            <LinkButton href={adminQuestionsPath(publicId)} variant="secondary" size="sm">
               Edit questions
             </LinkButton>
             <CopyButton value={shareUrl} label="Copy participant link" />
@@ -102,13 +108,13 @@ export default async function AdminPage({ params, searchParams }: Props) {
             showNames
             admin
             publicId={publicId}
-            adminToken={queryToken}
+            adminToken={undefined}
           />
         </div>
 
         <div className="mt-10 grid gap-6 lg:grid-cols-2">
-          <ParticipantList poll={poll} token={queryToken} />
-          <AdminSettingsForm poll={poll} token={queryToken} />
+          <ParticipantList poll={poll} token={undefined} />
+          <AdminSettingsForm poll={poll} token={undefined} />
         </div>
       </Main>
     </PageShell>

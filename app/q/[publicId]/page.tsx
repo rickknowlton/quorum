@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { RespondForm } from "@/components/poll/respond-form";
 import { LinkButton } from "@/components/ui/button";
 import { Card, Main, PageShell, SiteHeader } from "@/components/ui/shell";
-import { editCookieName, tokensEqual } from "@/lib/auth/tokens";
+import { editCookieName, matchesStoredSecret } from "@/lib/auth/tokens";
 import { timezoneLabel } from "@/lib/dates/format";
 import { getPollByPublicId, getPollPublicMeta } from "@/lib/polls/queries";
 import { isAcceptingResponses, pollAcceptanceMessage } from "@/lib/polls/status";
@@ -32,7 +32,7 @@ export default async function PollPage({ params }: Props) {
   const cookieStore = await cookies();
   const editToken = cookieStore.get(editCookieName(publicId))?.value;
   const participant = editToken
-    ? poll.participants.find((item) => tokensEqual(editToken, item.editToken))
+    ? poll.participants.find((item) => matchesStoredSecret(editToken, item.editToken))
     : undefined;
   const acceptance = isAcceptingResponses(poll);
 
@@ -76,7 +76,7 @@ export default async function PollPage({ params }: Props) {
             ) : null}
             <RespondForm
               poll={poll}
-              editToken={participant?.editToken}
+              editToken={editToken}
               initialName={participant?.name}
               initialAnswers={
                 participant ? answersFromParticipant(poll.questions, participant) : undefined

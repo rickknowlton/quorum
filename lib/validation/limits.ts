@@ -1,0 +1,13 @@
+export const POLL_TITLE_MAX = 150;
+export const POLL_DESCRIPTION_MAX = 5_000;
+export const QUESTION_TITLE_MAX = 300;
+export const QUESTION_DESCRIPTION_MAX = 2_000;
+export const OPTION_LABEL_MAX = 300;
+export const FOLLOW_UP_TITLE_MAX = 300;
+export const PARTICIPANT_NAME_MAX = 100;
+export const TEXT_RESPONSE_MAX = 10_000;
+export const QUESTIONS_PER_POLL_MAX = 50;
+export const CHOICES_PER_QUESTION_MAX = 100;
+export const AVAILABILITY_SLOTS_MAX = 200;
+export const ANSWERS_PER_SUBMIT_MAX = 50;
+export const EDIT_TOKEN_MAX = 128;

@@ -5,7 +5,8 @@ import { PublicPollCredit } from "@/components/marketing/public-poll-credit";
 import { RespondForm } from "@/components/poll/respond-form";
 import { Card, Main, PageShell, SiteHeader } from "@/components/ui/shell";
 import { privatePageMetadata } from "@/lib/seo/metadata";
-import { editCookieName, tokensEqual } from "@/lib/auth/tokens";
+import { claimEditQueryToken } from "@/lib/auth/claim";
+import { editCookieName, matchesStoredSecret } from "@/lib/auth/tokens";
 import { getParticipantByEditToken, getPollByPublicId } from "@/lib/polls/queries";
 import { isAcceptingResponses, pollAcceptanceMessage } from "@/lib/polls/status";
 import { answersFromParticipant } from "@/lib/responses/hydrate";
@@ -23,10 +24,19 @@ export default async function EditResponsePage({ params, searchParams }: Props) 
     notFound();
   }
 
+  const queryToken = typeof query.token === "string" ? query.token : undefined;
   const cookieStore = await cookies();
-  const token = typeof query.token === "string" ? query.token : cookieStore.get(editCookieName(publicId))?.value;
+  const token = queryToken ?? cookieStore.get(editCookieName(publicId))?.value;
   const participant = token ? await getParticipantByEditToken(poll.id, token) : undefined;
-  const valid = participant && tokensEqual(token, participant.editToken);
+  const valid = Boolean(
+    participant && token && matchesStoredSecret(token, participant.editToken),
+  );
+
+  await claimEditQueryToken({
+    publicId,
+    queryToken,
+    storedToken: valid ? participant?.editToken : undefined,
+  });
   const acceptance = isAcceptingResponses(poll);
 
   return (
@@ -48,11 +58,11 @@ export default async function EditResponsePage({ params, searchParams }: Props) 
           <Card className="mt-8">
             <p>{pollAcceptanceMessage(acceptance.reason)}</p>
           </Card>
-        ) : (
+        ) : participant ? (
           <div className="mt-8">
             <RespondForm
               poll={poll}
-              editToken={participant.editToken}
+              editToken={token}
               initialName={participant.name}
               initialAnswers={answersFromParticipant(poll.questions, {
                 ...participant,
@@ -60,6 +70,10 @@ export default async function EditResponsePage({ params, searchParams }: Props) 
               })}
             />
           </div>
+        ) : (
+          <Card className="mt-8">
+            <p>This edit link is invalid. Ask the organizer for the poll link and submit again.</p>
+          </Card>
         )}
         <PublicPollCredit />
       </Main>

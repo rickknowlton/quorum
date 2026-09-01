@@ -9,6 +9,7 @@ import {
   responses,
 } from "./schema";
 import { createSecretToken } from "../lib/ids";
+import { hashSecret } from "../lib/auth/tokens";
 import { wallTimeToUtc } from "../lib/dates/format";
 
 export const DEMO_PUBLIC_ID = "demoBooze01";
@@ -26,7 +27,7 @@ async function seed() {
     .insert(polls)
     .values({
       publicId: DEMO_PUBLIC_ID,
-      adminToken: DEMO_ADMIN_TOKEN,
+      adminToken: hashSecret(DEMO_ADMIN_TOKEN),
       title: "Booze League Draft",
       description: "Let's lock in the draft and a few league rules before the season.",
       timezone: TIMEZONE,
@@ -141,7 +142,7 @@ async function seed() {
 
   const people = await db
     .insert(participants)
-    .values(NAMES.map((name) => ({ pollId: poll.id, name, editToken: createSecretToken() })))
+    .values(NAMES.map((name) => ({ pollId: poll.id, name, editToken: hashSecret(createSecretToken()) })))
     .returning();
 
   const byName = Object.fromEntries(people.map((person) => [person.name, person]));

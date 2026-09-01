@@ -16,8 +16,9 @@ export function adminQuestionsPath(publicId: string, token?: string) {
   return token ? `${path}?token=${encodeURIComponent(token)}` : path;
 }
 
-export function editPath(publicId: string, token: string) {
-  return `/q/${publicId}/edit?token=${encodeURIComponent(token)}`;
+export function editPath(publicId: string, token?: string) {
+  const path = `/q/${publicId}/edit`;
+  return token ? `${path}?token=${encodeURIComponent(token)}` : path;
 }
 
 export function resultsPath(publicId: string) {

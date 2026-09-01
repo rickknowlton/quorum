@@ -135,6 +135,12 @@ export const responses = pgTable(
   ],
 );
 
+export const rateLimits = pgTable("rate_limits", {
+  key: text("key").primaryKey(),
+  count: integer("count").notNull(),
+  resetAt: timestamp("reset_at", { withTimezone: true }).notNull(),
+});
+
 export const finalizations = pgTable("finalizations", {
   id: uuid("id").primaryKey().defaultRandom(),
   questionId: uuid("question_id")

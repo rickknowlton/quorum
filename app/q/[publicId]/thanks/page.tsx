@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { LinkButton } from "@/components/ui/button";
 import { Card, Main, PageShell, SiteHeader } from "@/components/ui/shell";
 import { privatePageMetadata } from "@/lib/seo/metadata";
-import { editCookieName, tokensEqual } from "@/lib/auth/tokens";
+import { editCookieName, matchesStoredSecret } from "@/lib/auth/tokens";
 import { getPollByPublicId } from "@/lib/polls/queries";
 import { editPath, participantPath, resultsPath } from "@/lib/polls/paths";
 import { getAppOrigin } from "@/lib/polls/origin";
@@ -25,10 +25,10 @@ export default async function ThanksPage({ params }: Props) {
   const cookieStore = await cookies();
   const token = cookieStore.get(editCookieName(publicId))?.value;
   const participant = token
-    ? poll.participants.find((item) => tokensEqual(token, item.editToken))
+    ? poll.participants.find((item) => matchesStoredSecret(token, item.editToken))
     : undefined;
   const origin = await getAppOrigin();
-  const editUrl = participant ? `${origin}${editPath(publicId, participant.editToken)}` : null;
+  const editUrl = participant && token ? `${origin}${editPath(publicId, token)}` : null;
 
   return (
     <PageShell>
@@ -40,7 +40,7 @@ export default async function ThanksPage({ params }: Props) {
 
           <div className="mt-6 flex flex-wrap gap-3">
             {participant && poll.allowResponseEditing ? (
-              <LinkButton href={editPath(publicId, participant.editToken)} variant="secondary">
+              <LinkButton href={editPath(publicId, token)} variant="secondary">
                 Edit my response
               </LinkButton>
             ) : null}

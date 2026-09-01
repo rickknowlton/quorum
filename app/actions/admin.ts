@@ -11,11 +11,16 @@ import {
   questions,
 } from "@/db/schema";
 import { getOrganizerAccess } from "@/lib/auth/access";
-import { adminCookieName, AUTH_COOKIE_OPTIONS, editCookieName, tokensEqual } from "@/lib/auth/tokens";
+import {
+  authCookieDeleteOptions,
+  editCookieName,
+  matchesStoredSecret,
+} from "@/lib/auth/tokens";
 import { isDatabaseUnavailable } from "@/lib/db/connection-error";
 import { wallTimeToUtc } from "@/lib/dates/format";
 import { followUpValues, parseShowIf } from "@/lib/polls/question-settings";
 import { getPollByPublicId, type PollWithDetails } from "@/lib/polls/queries";
+import { canFinalizeAvailabilityOption } from "@/lib/responses/build-rows";
 import {
   updatePollQuestionsSchema,
   updatePollSettingsSchema,
@@ -130,8 +135,11 @@ export async function deleteParticipantAction(
   });
   const cookieStore = await cookies();
   const cookieToken = cookieStore.get(editCookieName(publicId))?.value;
-  if (existing && cookieToken && tokensEqual(cookieToken, existing.editToken)) {
-    cookieStore.delete(editCookieName(publicId));
+  if (existing && cookieToken && matchesStoredSecret(cookieToken, existing.editToken)) {
+    cookieStore.delete({
+      name: editCookieName(publicId),
+      ...authCookieDeleteOptions(publicId),
+    });
   }
 
   await db
@@ -158,8 +166,7 @@ export async function finalizeOptionAction(
   }
 
   const question = access.poll.questions.find((item) => item.id === questionId);
-  const option = question?.options.find((item) => item.id === optionId);
-  if (!question || question.type !== "availability" || !option) {
+  if (!canFinalizeAvailabilityOption(question, optionId)) {
     throw new Error("That time is no longer available.");
   }
 
@@ -497,9 +504,4 @@ async function deleteStaleOptions(tx: DbTransaction, questionId: string, keepIds
   await tx
     .delete(questionOptions)
     .where(and(eq(questionOptions.questionId, questionId), notInArray(questionOptions.id, [...keepIds])));
-}
-
-export async function persistAdminCookie(publicId: string, token: string) {
-  const cookieStore = await cookies();
-  cookieStore.set(adminCookieName(publicId), token, AUTH_COOKIE_OPTIONS);
 }

@@ -1,6 +1,7 @@
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { participants, polls } from "@/db/schema";
+import { secretLookupValues } from "@/lib/auth/tokens";
 
 export async function getPollPublicMeta(publicId: string) {
   return db.query.polls.findFirst({
@@ -55,7 +56,7 @@ export async function getPollsByOwnerUserId(ownerUserId: string) {
 
 export async function getParticipantByEditToken(pollId: string, editToken: string) {
   return db.query.participants.findFirst({
-    where: eq(participants.editToken, editToken),
+    where: inArray(participants.editToken, secretLookupValues(editToken)),
     with: {
       responses: true,
     },

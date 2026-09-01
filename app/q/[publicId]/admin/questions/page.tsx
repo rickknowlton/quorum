@@ -2,10 +2,10 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { privatePageMetadata } from "@/lib/seo/metadata";
 import { EditQuestionsForm } from "@/components/poll/edit-questions-form";
-import { ClaimAdminCookie } from "@/components/poll/claim-admin-cookie";
 import { LinkButton } from "@/components/ui/button";
 import { Card, Main, PageShell, SiteHeader } from "@/components/ui/shell";
 import { getOrganizerAccess } from "@/lib/auth/access";
+import { claimAdminQueryToken } from "@/lib/auth/claim";
 import { draftsFromPollQuestions } from "@/lib/polls/drafts";
 import { adminPath } from "@/lib/polls/paths";
 import { getPollByPublicId } from "@/lib/polls/queries";
@@ -24,7 +24,14 @@ export default async function AdminQuestionsPage({ params, searchParams }: Props
   }
 
   const queryToken = typeof query.token === "string" ? query.token : undefined;
-  const access = await getOrganizerAccess(poll, queryToken);
+  await claimAdminQueryToken({
+    publicId,
+    storedToken: poll.adminToken,
+    queryToken,
+    ownerUserId: poll.ownerUserId,
+    destination: "questions",
+  });
+  const access = await getOrganizerAccess(poll);
 
   if (!access.authorized) {
     return (
@@ -44,11 +51,10 @@ export default async function AdminQuestionsPage({ params, searchParams }: Props
 
   return (
     <PageShell>
-      {queryToken ? <ClaimAdminCookie publicId={publicId} token={queryToken} /> : null}
       <SiteHeader
         action={
           <LinkButton
-            href={adminPath(publicId, queryToken)}
+            href={adminPath(publicId)}
             variant="ghost"
             size="sm"
             className="whitespace-nowrap"
@@ -65,7 +71,7 @@ export default async function AdminQuestionsPage({ params, searchParams }: Props
           <EditQuestionsForm
             key={poll.questions.map((question) => `${question.id}:${question.updatedAt}`).join("|")}
             publicId={publicId}
-            token={queryToken}
+            token={undefined}
             timezone={poll.timezone}
             initialQuestions={draftsFromPollQuestions(poll.questions, poll.timezone)}
           />
