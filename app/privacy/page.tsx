@@ -112,15 +112,15 @@ export default function PrivacyPage() {
             <p className="mt-3">
               The site is hosted on Vercel. Account sign-in is handled by Clerk. Poll data is stored
               in a PostgreSQL database. Those providers process data as needed to run their
-              services.
+              services. Vercel also collects cookieless page-view analytics so I can see which
+              pages are used.
             </p>
           </section>
 
           <section>
             <h2 className="text-xl font-semibold tracking-tight text-foreground">What Quorum doesn’t do</h2>
             <p className="mt-3">
-              Quorum does not sell your data, run ads against it, or use a separate analytics
-              product on these pages.
+              Quorum does not sell your data, run ads against it, or use advertising cookies.
             </p>
           </section>
 

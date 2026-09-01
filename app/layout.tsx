@@ -1,6 +1,7 @@
 import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import { Instrument_Serif, Geist } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import { clerkAppearance } from "@/lib/auth/clerk-appearance";
 import { clerkPublishableKey } from "@/lib/auth/clerk-env";
 import { rootMetadata } from "@/lib/seo/metadata";
@@ -29,6 +30,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           afterSignOutUrl="/"
         >
           {children}
+          <Analytics />
         </ClerkProvider>
       </body>
     </html>
