@@ -18,7 +18,7 @@ import {
 } from "@/lib/auth/tokens";
 import { isDatabaseUnavailable } from "@/lib/db/connection-error";
 import { wallTimeToUtc } from "@/lib/dates/format";
-import { followUpValues, parseShowIf } from "@/lib/polls/question-settings";
+import { followUpValues, multipleChoiceSettingsJson, parseShowIf } from "@/lib/polls/question-settings";
 import { getPollByPublicId, type PollWithDetails } from "@/lib/polls/queries";
 import { canFinalizeAvailabilityOption } from "@/lib/responses/build-rows";
 import {
@@ -273,6 +273,11 @@ export async function updatePollQuestionsAction(
           throw new Error("Question type cannot be changed.");
         }
 
+        const settingsJson =
+          draft.type === "multiple_choice"
+            ? multipleChoiceSettingsJson(draft.allowMultiple)
+            : null;
+
         const questionId = existing
           ? (
               await tx
@@ -282,7 +287,7 @@ export async function updatePollQuestionsAction(
                   description: draft.description || null,
                   required: draft.required,
                   sortOrder,
-                  settingsJson: null,
+                  settingsJson,
                   updatedAt: new Date(),
                 })
                 .where(eq(questions.id, existing.id))
@@ -298,6 +303,7 @@ export async function updatePollQuestionsAction(
                   description: draft.description || null,
                   required: draft.required,
                   sortOrder,
+                  settingsJson,
                 })
                 .returning({ id: questions.id })
             )[0]?.id;

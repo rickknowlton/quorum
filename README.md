@@ -150,6 +150,7 @@ In the Clerk Dashboard, add your Vercel domain to the allowed origins.
 - **Deadline and closed are separate.** A passed deadline stops responses; closing is an explicit organizer action.
 - **Finalizing a time does not close the poll.** Other questions can stay open until the organizer closes it.
 - **Admin and edit authorization are checked on the server** with timing-safe token comparison. Cookies are convenience, not the only credential.
+- **Postgres is not exposed through the Supabase Data API.** Tables have row-level security on, with no policies for `anon` / `authenticated`. The app uses the server-side Drizzle connection only.
 
 ## Future / Not MVP
 
@@ -162,7 +163,6 @@ In the Clerk Dashboard, add your Vercel domain to the allowed origins.
 - ICS export
 - Google Calendar integration
 - Ranked-choice voting
-- Multi-select questions
 - Numeric ratings
 - Date-only voting
 - Anonymous voting

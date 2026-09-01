@@ -1,7 +1,7 @@
 import type { QuestionType } from "@/db/schema";
 import type { PollQuestion } from "@/lib/polls/queries";
-import { isFollowUpVisible, parseShowIf } from "@/lib/polls/question-settings";
-import type { QuestionAnswer } from "@/lib/responses/validate";
+import { isFollowUpVisible, parseAllowMultiple, parseShowIf } from "@/lib/polls/question-settings";
+import { selectedChoiceIds, type QuestionAnswer } from "@/lib/responses/validate";
 
 export type ResponseRow = {
   participantId: string;
@@ -70,17 +70,22 @@ export function buildResponseRows(
       });
     }
 
-    if (
-      answer.type === "multiple_choice" &&
-      answer.optionId &&
-      optionBelongsToQuestion(question, answer.optionId)
-    ) {
-      rows.push({
-        participantId,
-        questionId: answer.questionId,
-        optionId: answer.optionId,
-        value: answer.optionId,
-      });
+    if (answer.type === "multiple_choice") {
+      const optionIds = selectedChoiceIds(
+        { optionIds: question.options.map((option) => option.id) },
+        answer,
+      );
+      const stored = parseAllowMultiple(question.settingsJson)
+        ? optionIds
+        : optionIds.slice(0, 1);
+      for (const optionId of stored) {
+        rows.push({
+          participantId,
+          questionId: answer.questionId,
+          optionId,
+          value: optionId,
+        });
+      }
     }
 
     if (answer.type === "text" && answer.value.trim()) {

@@ -48,6 +48,14 @@ export function parseShowIf(settings: Record<string, unknown> | null | undefined
   return { questionId: record.questionId, values };
 }
 
+export function parseAllowMultiple(settings: Record<string, unknown> | null | undefined) {
+  return settings?.allowMultiple === true;
+}
+
+export function multipleChoiceSettingsJson(allowMultiple: boolean): Record<string, unknown> | null {
+  return allowMultiple ? { allowMultiple: true } : null;
+}
+
 export function isFollowUpVisible(
   showIf: ShowIfCondition | null | undefined,
   parentValue: string | undefined,

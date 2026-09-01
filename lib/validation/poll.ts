@@ -82,6 +82,7 @@ const createQuestionSchema = z.discriminatedUnion("type", [
     title: titleSchema,
     description: descriptionSchema,
     required: z.boolean(),
+    allowMultiple: z.boolean().optional().default(false),
     options: z
       .array(
         z.object({
@@ -183,7 +184,9 @@ export const submitResponseSchema = z.object({
         z.object({
           type: z.literal("multiple_choice"),
           questionId: z.uuid(),
-          optionId: z.string().max(64),
+          optionIds: z
+            .array(z.string().max(64))
+            .max(CHOICES_PER_QUESTION_MAX, "Too many choices"),
         }),
         z.object({
           type: z.literal("text"),

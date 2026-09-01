@@ -7,6 +7,7 @@ export type QuestionForValidation = {
   title: string;
   required: boolean;
   optionIds: string[];
+  allowMultiple?: boolean;
   showIf?: ShowIfCondition | null;
 };
 
@@ -25,7 +26,7 @@ export type YesNoAnswer = {
 export type MultipleChoiceAnswer = {
   type: "multiple_choice";
   questionId: string;
-  optionId: string;
+  optionIds: string[];
 };
 
 export type TextAnswer = {
@@ -86,7 +87,7 @@ export function isAnswerComplete(
     case "yes_no":
       return answer.value === "yes" || answer.value === "no";
     case "multiple_choice":
-      return Boolean(answer.optionId && question.optionIds.includes(answer.optionId));
+      return selectedChoiceIds(question, answer).length > 0;
     case "text":
       return answer.value.trim().length > 0;
     default:
@@ -107,4 +108,46 @@ export function hasInvalidMaybeVotes(
       answer.type === "availability" &&
       Object.values(answer.selections).includes("maybe"),
   );
+}
+
+export function findInvalidSingleChoiceAnswers(
+  questions: QuestionForValidation[],
+  answers: QuestionAnswer[],
+) {
+  const questionsById = new Map(questions.map((question) => [question.id, question]));
+  const invalid: Array<{ questionId: string; title: string }> = [];
+
+  for (const answer of answers) {
+    if (answer.type !== "multiple_choice") {
+      continue;
+    }
+    const question = questionsById.get(answer.questionId);
+    if (!question || question.allowMultiple) {
+      continue;
+    }
+    if (selectedChoiceIds(question, answer).length > 1) {
+      invalid.push({ questionId: question.id, title: question.title });
+    }
+  }
+
+  return invalid;
+}
+
+export function selectedChoiceIds(
+  question: Pick<QuestionForValidation, "optionIds">,
+  answer: MultipleChoiceAnswer,
+) {
+  const allowed = new Set(question.optionIds);
+  const seen = new Set<string>();
+  const selected: string[] = [];
+
+  for (const optionId of answer.optionIds) {
+    if (!allowed.has(optionId) || seen.has(optionId)) {
+      continue;
+    }
+    seen.add(optionId);
+    selected.push(optionId);
+  }
+
+  return selected;
 }

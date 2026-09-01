@@ -7,13 +7,14 @@ import { ResultsList } from "@/components/results/results-list";
 import { CopyButton } from "@/components/ui/copy-button";
 import { LinkButton } from "@/components/ui/button";
 import { Card, Main, PageShell, SiteHeader } from "@/components/ui/shell";
+import { ClaimQueryCookie } from "@/components/poll/claim-query-cookie";
 import { getOrganizerAccess } from "@/lib/auth/access";
-import { claimAdminQueryToken } from "@/lib/auth/claim";
+import { matchesStoredSecret } from "@/lib/auth/tokens";
 import { timezoneLabel } from "@/lib/dates/format";
 import { getPollByPublicId } from "@/lib/polls/queries";
 import { buildPollResults } from "@/lib/results/build";
 import { getAppOrigin } from "@/lib/polls/origin";
-import { adminQuestionsPath, participantPath } from "@/lib/polls/paths";
+import { adminPath, adminQuestionsPath, participantPath } from "@/lib/polls/paths";
 import type { PollRouteProps } from "@/lib/polls/page-props";
 
 type Props = PollRouteProps;
@@ -29,14 +30,7 @@ export default async function AdminPage({ params, searchParams }: Props) {
   }
 
   const queryToken = typeof query.token === "string" ? query.token : undefined;
-  await claimAdminQueryToken({
-    publicId,
-    storedToken: poll.adminToken,
-    queryToken,
-    ownerUserId: poll.ownerUserId,
-    destination: "admin",
-  });
-  const access = await getOrganizerAccess(poll);
+  const access = await getOrganizerAccess(poll, queryToken);
 
   if (!access.authorized) {
     return (
@@ -73,6 +67,14 @@ export default async function AdminPage({ params, searchParams }: Props) {
         }
       />
       <Main className="mx-auto w-full max-w-5xl px-4 py-10 sm:py-14">
+        {queryToken && matchesStoredSecret(queryToken, poll.adminToken) ? (
+          <ClaimQueryCookie
+            publicId={publicId}
+            token={queryToken}
+            kind="admin"
+            href={adminPath(publicId)}
+          />
+        ) : null}
         {access.isOwner ? null : (
           <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-950">
             <p className="font-medium">This browser remembers organizer access.</p>

@@ -4,10 +4,11 @@ import { privatePageMetadata } from "@/lib/seo/metadata";
 import { EditQuestionsForm } from "@/components/poll/edit-questions-form";
 import { LinkButton } from "@/components/ui/button";
 import { Card, Main, PageShell, SiteHeader } from "@/components/ui/shell";
+import { ClaimQueryCookie } from "@/components/poll/claim-query-cookie";
 import { getOrganizerAccess } from "@/lib/auth/access";
-import { claimAdminQueryToken } from "@/lib/auth/claim";
+import { matchesStoredSecret } from "@/lib/auth/tokens";
 import { draftsFromPollQuestions } from "@/lib/polls/drafts";
-import { adminPath } from "@/lib/polls/paths";
+import { adminPath, adminQuestionsPath } from "@/lib/polls/paths";
 import { getPollByPublicId } from "@/lib/polls/queries";
 import type { PollRouteProps } from "@/lib/polls/page-props";
 
@@ -24,14 +25,7 @@ export default async function AdminQuestionsPage({ params, searchParams }: Props
   }
 
   const queryToken = typeof query.token === "string" ? query.token : undefined;
-  await claimAdminQueryToken({
-    publicId,
-    storedToken: poll.adminToken,
-    queryToken,
-    ownerUserId: poll.ownerUserId,
-    destination: "questions",
-  });
-  const access = await getOrganizerAccess(poll);
+  const access = await getOrganizerAccess(poll, queryToken);
 
   if (!access.authorized) {
     return (
@@ -64,6 +58,14 @@ export default async function AdminQuestionsPage({ params, searchParams }: Props
         }
       />
       <Main className="mx-auto w-full max-w-5xl px-4 py-10 sm:py-14">
+        {queryToken && matchesStoredSecret(queryToken, poll.adminToken) ? (
+          <ClaimQueryCookie
+            publicId={publicId}
+            token={queryToken}
+            kind="admin"
+            href={adminQuestionsPath(publicId)}
+          />
+        ) : null}
         <p className="text-xs font-medium uppercase tracking-wide text-muted">Organizer</p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight">Edit questions</h1>
         <p className="mt-2 text-muted">{poll.title}</p>

@@ -37,10 +37,13 @@ export function answersFromParticipant(
     }
 
     if (question.type === "multiple_choice") {
+      const allowed = new Set(question.options.map((option) => option.id));
       return {
         type: "multiple_choice",
         questionId: question.id,
-        optionId: questionResponses[0]?.optionId ?? "",
+        optionIds: questionResponses.flatMap((response) =>
+          response.optionId && allowed.has(response.optionId) ? [response.optionId] : [],
+        ),
       };
     }
 

@@ -4,6 +4,7 @@ import { formatWallDate, formatWallTime } from "@/lib/dates/format";
 import {
   FOLLOW_UP_TITLE_DEFAULTS,
   followUpWhenFromValues,
+  parseAllowMultiple,
   parseShowIf,
 } from "@/lib/polls/question-settings";
 import type { QuestionType } from "@/db/schema";
@@ -69,6 +70,10 @@ export function draftsFromPollQuestions(
                 .sort((left, right) => left.sortOrder - right.sortOrder)
                 .map((option) => ({ id: option.id, label: option.label ?? "" }))
             : [],
+        allowMultiple:
+          question.type === "multiple_choice"
+            ? parseAllowMultiple(question.settingsJson)
+            : false,
         followUpEnabled: Boolean(followUp),
         followUpWhen: showIf ? followUpWhenFromValues(showIf.values) : "yes",
         followUpTitle: followUp?.title ?? FOLLOW_UP_TITLE_DEFAULTS.yes,

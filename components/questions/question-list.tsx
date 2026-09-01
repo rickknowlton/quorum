@@ -28,6 +28,7 @@ export type DraftQuestion = {
   followUpWhen: FollowUpWhen;
   followUpTitle: string;
   followUpRequired: boolean;
+  allowMultiple: boolean;
 };
 
 const TYPE_LABELS: Record<QuestionType, string> = {
@@ -63,6 +64,7 @@ export function createDraftQuestion(type: QuestionType): DraftQuestion {
     followUpWhen: "yes",
     followUpTitle: FOLLOW_UP_TITLE_DEFAULTS.yes,
     followUpRequired: false,
+    allowMultiple: false,
   };
 }
 
@@ -83,6 +85,7 @@ export function serializeQuestions(questions: DraftQuestion[]) {
       return {
         ...base,
         type: "multiple_choice" as const,
+        allowMultiple: question.allowMultiple,
         options: question.choices.map((choice) => ({ id: choice.id, label: choice.label })),
       };
     }
@@ -261,7 +264,22 @@ export function QuestionList({
                 <Plus className="size-4" aria-hidden="true" />
                 Add choice
               </Button>
-              <Hint>Participants choose one option. Multi-select can come later.</Hint>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  className="size-4 accent-accent"
+                  checked={question.allowMultiple}
+                  onChange={(event) =>
+                    update(question.id, { allowMultiple: event.target.checked })
+                  }
+                />
+                Allow selecting more than one
+              </label>
+              <Hint>
+                {question.allowMultiple
+                  ? "Participants can choose any number of options."
+                  : "Participants choose one option."}
+              </Hint>
             </div>
           ) : null}
 

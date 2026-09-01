@@ -11,7 +11,7 @@ import { Card } from "@/components/ui/shell";
 import { cn } from "@/lib/cn";
 import { formatDateHeading, formatTimeRange } from "@/lib/dates/format";
 import { thanksPath } from "@/lib/polls/paths";
-import { isFollowUpVisible, parseShowIf } from "@/lib/polls/question-settings";
+import { isFollowUpVisible, parseAllowMultiple, parseShowIf } from "@/lib/polls/question-settings";
 import type { PollQuestion, PollWithDetails } from "@/lib/polls/queries";
 import type { QuestionAnswer } from "@/lib/responses/validate";
 
@@ -35,7 +35,7 @@ function emptyAnswers(questions: PollQuestion[]): QuestionAnswer[] {
       return { type: "yes_no", questionId: question.id, value: "" };
     }
     if (question.type === "multiple_choice") {
-      return { type: "multiple_choice", questionId: question.id, optionId: "" };
+      return { type: "multiple_choice", questionId: question.id, optionIds: [] };
     }
     return { type: "text", questionId: question.id, value: "" };
   });
@@ -326,27 +326,50 @@ function ChoiceAnswers({
   answer: Extract<QuestionAnswer, { type: "multiple_choice" }>;
   onChange: (answer: QuestionAnswer) => void;
 }) {
+  const allowMultiple = parseAllowMultiple(question.settingsJson);
+  const selected = new Set(answer.optionIds);
+
+  function select(optionId: string) {
+    if (allowMultiple) {
+      const next = new Set(selected);
+      if (next.has(optionId)) {
+        next.delete(optionId);
+      } else {
+        next.add(optionId);
+      }
+      onChange({ ...answer, optionIds: [...next] });
+      return;
+    }
+    onChange({ ...answer, optionIds: [optionId] });
+  }
+
   return (
     <fieldset className="space-y-2">
       <legend className="sr-only">{question.title}</legend>
-      {question.options.map((option) => (
-        <label
-          key={option.id}
-          className={cn(
-            "flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border px-3",
-            answer.optionId === option.id ? "border-accent bg-teal-50" : "border-border bg-white",
-          )}
-        >
-          <input
-            type="radio"
-            name={question.id}
-            className="size-4 accent-accent"
-            checked={answer.optionId === option.id}
-            onChange={() => onChange({ ...answer, optionId: option.id })}
-          />
-          {option.label}
-        </label>
-      ))}
+      {allowMultiple ? (
+        <p className="mb-2 text-sm text-muted">Select all that apply.</p>
+      ) : null}
+      {question.options.map((option) => {
+        const checked = selected.has(option.id);
+        return (
+          <label
+            key={option.id}
+            className={cn(
+              "flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border px-3",
+              checked ? "border-accent bg-teal-50" : "border-border bg-white",
+            )}
+          >
+            <input
+              type={allowMultiple ? "checkbox" : "radio"}
+              name={question.id}
+              className="size-4 accent-accent"
+              checked={checked}
+              onChange={() => select(option.id)}
+            />
+            {option.label}
+          </label>
+        );
+      })}
     </fieldset>
   );
 }

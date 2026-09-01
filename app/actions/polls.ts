@@ -8,7 +8,7 @@ import { wallTimeToUtc } from "@/lib/dates/format";
 import { isDatabaseUnavailable } from "@/lib/db/connection-error";
 import { createPublicId, createSecretToken } from "@/lib/ids";
 import { hashSecret } from "@/lib/auth/tokens";
-import { followUpValues } from "@/lib/polls/question-settings";
+import { followUpValues, multipleChoiceSettingsJson } from "@/lib/polls/question-settings";
 import { limitPollCreation } from "@/lib/rate-limit";
 import { createPollSchema, type CreatePollInput } from "@/lib/validation/poll";
 
@@ -71,6 +71,10 @@ export async function createPollAction(
             description: question.description || null,
             required: question.required,
             sortOrder: sortOrder,
+            settingsJson:
+              question.type === "multiple_choice"
+                ? multipleChoiceSettingsJson(question.allowMultiple)
+                : undefined,
           })
           .returning();
 

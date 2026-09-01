@@ -59,7 +59,7 @@ describe("draftsFromPollQuestions", () => {
           description: null,
           required: true,
           sortOrder: 3,
-          settingsJson: null,
+          settingsJson: { allowMultiple: true },
           options: [{ id: pprId, label: "Full PPR", startsAt: null, endsAt: null, sortOrder: 0 }],
         },
       ],
@@ -83,5 +83,6 @@ describe("draftsFromPollQuestions", () => {
       followUpRequired: false,
     });
     expect(drafts[2]?.choices).toEqual([{ id: pprId, label: "Full PPR" }]);
+    expect(drafts[2]?.allowMultiple).toBe(true);
   });
 });

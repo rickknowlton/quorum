@@ -162,15 +162,26 @@ function buildMultipleChoiceResults(
   participants: PollParticipant[],
 ): MultipleChoiceResults {
   const counts = new Map(question.options.map((option) => [option.id, 0]));
+  let answered = 0;
 
   for (const participant of participants) {
-    const response = participant.responses.find((item) => item.questionId === question.id);
-    if (response?.optionId && counts.has(response.optionId)) {
-      counts.set(response.optionId, (counts.get(response.optionId) ?? 0) + 1);
+    const selected = new Set(
+      participant.responses.flatMap((item) =>
+        item.questionId === question.id && item.optionId && counts.has(item.optionId)
+          ? [item.optionId]
+          : [],
+      ),
+    );
+    if (selected.size === 0) {
+      continue;
+    }
+    answered += 1;
+    for (const optionId of selected) {
+      counts.set(optionId, (counts.get(optionId) ?? 0) + 1);
     }
   }
 
-  const total = [...counts.values()].reduce((sum, count) => sum + count, 0);
+  const total = answered;
 
   return {
     type: "multiple_choice",

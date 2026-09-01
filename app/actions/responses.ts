@@ -14,11 +14,12 @@ import {
 import { createSecretToken } from "@/lib/ids";
 import { isDatabaseUnavailable } from "@/lib/db/connection-error";
 import { getPollByPublicId } from "@/lib/polls/queries";
-import { parseShowIf } from "@/lib/polls/question-settings";
+import { parseAllowMultiple, parseShowIf } from "@/lib/polls/question-settings";
 import { isAcceptingResponses, pollAcceptanceMessage } from "@/lib/polls/status";
 import { clientIpFromHeaders, limitPollSubmission } from "@/lib/rate-limit";
 import { buildResponseRows } from "@/lib/responses/build-rows";
 import {
+  findInvalidSingleChoiceAnswers,
   findMissingRequiredAnswers,
   hasInvalidMaybeVotes,
   type QuestionAnswer,
@@ -52,20 +53,26 @@ export async function submitResponseAction(publicId: string, input: unknown) {
   }
 
   const answers = parsed.data.answers as QuestionAnswer[];
-  const missing = findMissingRequiredAnswers(
-    poll.questions.map((question) => ({
-      id: question.id,
-      type: question.type,
-      title: question.title,
-      required: question.required,
-      optionIds: question.options.map((option) => option.id),
-      showIf: parseShowIf(question.settingsJson),
-    })),
-    answers,
-  );
+  const questionsForValidation = poll.questions.map((question) => ({
+    id: question.id,
+    type: question.type,
+    title: question.title,
+    required: question.required,
+    optionIds: question.options.map((option) => option.id),
+    allowMultiple: parseAllowMultiple(question.settingsJson),
+    showIf: parseShowIf(question.settingsJson),
+  }));
+  const missing = findMissingRequiredAnswers(questionsForValidation, answers);
 
   if (missing.length > 0) {
     return { error: `Please answer: ${missing.map((item) => item.title).join(", ")}` };
+  }
+
+  const extraChoices = findInvalidSingleChoiceAnswers(questionsForValidation, answers);
+  if (extraChoices.length > 0) {
+    return {
+      error: `Please choose only one option for: ${extraChoices.map((item) => item.title).join(", ")}`,
+    };
   }
 
   if (hasInvalidMaybeVotes(answers, poll.allowMaybe)) {

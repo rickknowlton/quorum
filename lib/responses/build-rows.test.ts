@@ -96,7 +96,7 @@ describe("cross-question option rejection", () => {
       {
         type: "multiple_choice",
         questionId: "q-choice",
-        optionId: "opt-a1",
+        optionIds: ["opt-a1"],
       },
     ]);
 
@@ -108,7 +108,7 @@ describe("cross-question option rejection", () => {
       {
         type: "multiple_choice",
         questionId: "q-choice",
-        optionId: "opt-ppr",
+        optionIds: ["opt-ppr"],
       },
     ]);
 
@@ -120,6 +120,36 @@ describe("cross-question option rejection", () => {
         value: "opt-ppr",
       },
     ]);
+  });
+
+  it("stores every selected option when multi-select is enabled", () => {
+    const rows = buildResponseRows(
+      {
+        questions: [{ ...choice, settingsJson: { allowMultiple: true } }],
+      },
+      "participant-1",
+      [
+        {
+          type: "multiple_choice",
+          questionId: "q-choice",
+          optionIds: ["opt-ppr", "opt-half", "opt-a1"],
+        },
+      ],
+    );
+
+    expect(rows.map((row) => row.optionId)).toEqual(["opt-ppr", "opt-half"]);
+  });
+
+  it("keeps only the first valid option on a single-select question", () => {
+    const rows = rowsFor([
+      {
+        type: "multiple_choice",
+        questionId: "q-choice",
+        optionIds: ["opt-ppr", "opt-half"],
+      },
+    ]);
+
+    expect(rows.map((row) => row.optionId)).toEqual(["opt-ppr"]);
   });
 });
 

@@ -2,12 +2,13 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { PublicPollCredit } from "@/components/marketing/public-poll-credit";
+import { ClaimQueryCookie } from "@/components/poll/claim-query-cookie";
 import { RespondForm } from "@/components/poll/respond-form";
 import { Card, Main, PageShell, SiteHeader } from "@/components/ui/shell";
 import { privatePageMetadata } from "@/lib/seo/metadata";
-import { claimEditQueryToken } from "@/lib/auth/claim";
 import { editCookieName, matchesStoredSecret } from "@/lib/auth/tokens";
 import { getParticipantByEditToken, getPollByPublicId } from "@/lib/polls/queries";
+import { editPath } from "@/lib/polls/paths";
 import { isAcceptingResponses, pollAcceptanceMessage } from "@/lib/polls/status";
 import { answersFromParticipant } from "@/lib/responses/hydrate";
 import type { PollRouteProps } from "@/lib/polls/page-props";
@@ -31,18 +32,20 @@ export default async function EditResponsePage({ params, searchParams }: Props) 
   const valid = Boolean(
     participant && token && matchesStoredSecret(token, participant.editToken),
   );
-
-  await claimEditQueryToken({
-    publicId,
-    queryToken,
-    storedToken: valid ? participant?.editToken : undefined,
-  });
   const acceptance = isAcceptingResponses(poll);
 
   return (
     <PageShell>
       <SiteHeader />
       <Main className="mx-auto w-full max-w-5xl px-4 py-10 sm:py-14">
+        {valid && queryToken ? (
+          <ClaimQueryCookie
+            publicId={publicId}
+            token={queryToken}
+            kind="edit"
+            href={editPath(publicId)}
+          />
+        ) : null}
         <h1 className="text-3xl font-semibold tracking-tight">Edit your response</h1>
         <p className="mt-2 text-muted">{poll.title}</p>
 

@@ -3,6 +3,8 @@ import {
   followUpValues,
   followUpWhenFromValues,
   isFollowUpVisible,
+  multipleChoiceSettingsJson,
+  parseAllowMultiple,
   parseShowIf,
 } from "@/lib/polls/question-settings";
 
@@ -43,5 +45,15 @@ describe("followUpWhenFromValues", () => {
     expect(followUpWhenFromValues(["yes"])).toBe("yes");
     expect(followUpWhenFromValues(["no"])).toBe("no");
     expect(followUpWhenFromValues(["yes", "no"])).toBe("either");
+  });
+});
+
+describe("parseAllowMultiple", () => {
+  it("is off unless settings explicitly enable it", () => {
+    expect(parseAllowMultiple(null)).toBe(false);
+    expect(parseAllowMultiple({ allowMultiple: false })).toBe(false);
+    expect(parseAllowMultiple({ allowMultiple: true })).toBe(true);
+    expect(multipleChoiceSettingsJson(true)).toEqual({ allowMultiple: true });
+    expect(multipleChoiceSettingsJson(false)).toBeNull();
   });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { findMissingRequiredAnswers, hasInvalidMaybeVotes } from "@/lib/responses/validate";
+import { findInvalidSingleChoiceAnswers, findMissingRequiredAnswers, hasInvalidMaybeVotes } from "@/lib/responses/validate";
 
 const questions = [
   {
@@ -41,7 +41,7 @@ describe("required question validation", () => {
         selections: { "opt-1": "yes", "opt-2": "" },
       },
       { type: "yes_no", questionId: "q-dues", value: "" },
-      { type: "multiple_choice", questionId: "q-format", optionId: "" },
+      { type: "multiple_choice", questionId: "q-format", optionIds: [] },
       { type: "text", questionId: "q-notes", value: "" },
     ]);
 
@@ -56,7 +56,7 @@ describe("required question validation", () => {
         selections: { "opt-1": "", "opt-2": "" },
       },
       { type: "yes_no", questionId: "q-dues", value: "yes" },
-      { type: "multiple_choice", questionId: "q-format", optionId: "ppr" },
+      { type: "multiple_choice", questionId: "q-format", optionIds: ["ppr"] },
       { type: "text", questionId: "q-notes", value: "" },
     ]);
 
@@ -71,7 +71,7 @@ describe("required question validation", () => {
         selections: { "opt-1": "yes", "opt-2": "no" },
       },
       { type: "yes_no", questionId: "q-dues", value: "yes" },
-      { type: "multiple_choice", questionId: "q-format", optionId: "ppr" },
+      { type: "multiple_choice", questionId: "q-format", optionIds: ["ppr"] },
       { type: "text", questionId: "q-notes", value: "   " },
     ]);
 
@@ -86,7 +86,7 @@ describe("required question validation", () => {
         selections: { "opt-1": "yes", "opt-2": "" },
       },
       { type: "yes_no", questionId: "q-dues", value: "yes" },
-      { type: "multiple_choice", questionId: "q-format", optionId: "opt-1" },
+      { type: "multiple_choice", questionId: "q-format", optionIds: ["opt-1"] },
     ]);
 
     expect(missing.map((item) => item.questionId)).toEqual(["q-format"]);
@@ -128,7 +128,7 @@ describe("required question validation", () => {
           selections: { "opt-1": "yes", "opt-2": "no" },
         },
         { type: "yes_no", questionId: "q-dues", value: "no" },
-        { type: "multiple_choice", questionId: "q-format", optionId: "ppr" },
+        { type: "multiple_choice", questionId: "q-format", optionIds: ["ppr"] },
         { type: "text", questionId: "q-notes", value: "" },
         { type: "text", questionId: "q-why", value: "" },
       ]).map((item) => item.questionId),
@@ -142,10 +142,41 @@ describe("required question validation", () => {
           selections: { "opt-1": "yes", "opt-2": "no" },
         },
         { type: "yes_no", questionId: "q-dues", value: "yes" },
-        { type: "multiple_choice", questionId: "q-format", optionId: "ppr" },
+        { type: "multiple_choice", questionId: "q-format", optionIds: ["ppr"] },
         { type: "text", questionId: "q-notes", value: "" },
         { type: "text", questionId: "q-why", value: "" },
       ]).map((item) => item.questionId),
     ).toEqual(["q-why"]);
+  });
+
+  it("accepts several valid options when multi-select is enabled", () => {
+    const withMulti = questions.map((question) =>
+      question.id === "q-format" ? { ...question, allowMultiple: true } : question,
+    );
+
+    expect(
+      findMissingRequiredAnswers(withMulti, [
+        {
+          type: "availability",
+          questionId: "q-avail",
+          selections: { "opt-1": "yes", "opt-2": "" },
+        },
+        { type: "yes_no", questionId: "q-dues", value: "yes" },
+        { type: "multiple_choice", questionId: "q-format", optionIds: ["ppr", "half"] },
+      ]),
+    ).toEqual([]);
+    expect(
+      findInvalidSingleChoiceAnswers(withMulti, [
+        { type: "multiple_choice", questionId: "q-format", optionIds: ["ppr", "half"] },
+      ]),
+    ).toEqual([]);
+  });
+
+  it("rejects extra choices on a single-select question", () => {
+    expect(
+      findInvalidSingleChoiceAnswers(questions, [
+        { type: "multiple_choice", questionId: "q-format", optionIds: ["ppr", "half"] },
+      ]).map((item) => item.questionId),
+    ).toEqual(["q-format"]);
   });
 });
