@@ -48,8 +48,8 @@ export default function AboutPage() {
         <div className="mt-8 space-y-5 text-lg leading-relaxed text-muted">
           <p>I built Quorum because I needed to schedule my fantasy football draft.</p>
           <p>
-            Doodle used to make that kind of thing dead simple, but over time it became more
-            cumbersome than I wanted for a small group poll.
+            The usual scheduling tools used to make that dead simple. Then they got heavier than I
+            wanted for a small group poll.
           </p>
           <p>
             Our league also had other things to vote on - dues, rules, scoring changes - and using
