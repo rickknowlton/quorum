@@ -23,22 +23,7 @@ export default async function DashboardPage() {
 
   return (
     <PageShell>
-      <SiteHeader
-        action={
-          <LinkButton
-            href="/create"
-            variant="ghost"
-            size="sm"
-            className="whitespace-nowrap"
-            aria-label="Create a poll"
-          >
-            <span className="sm:hidden" aria-hidden="true">
-              Create
-            </span>
-            <span className="max-sm:hidden">Create a poll</span>
-          </LinkButton>
-        }
-      />
+      <SiteHeader />
       <Main className="mx-auto w-full max-w-3xl px-4 py-10 sm:py-14">
         <p className="text-xs font-medium uppercase tracking-wide text-muted">Organizer</p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight">My polls</h1>

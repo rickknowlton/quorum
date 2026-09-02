@@ -1,6 +1,9 @@
 "use server";
 
 import { cookies } from "next/headers";
+import { eq, sql } from "drizzle-orm";
+import { db } from "@/db";
+import { polls } from "@/db/schema";
 import {
   adminCookieName,
   authCookieOptions,
@@ -42,6 +45,16 @@ export async function persistAdminCookie(publicId: string, token: string) {
 
   const cookieStore = await cookies();
   cookieStore.set(adminCookieName(publicId), token, authCookieOptions(publicId));
+  try {
+    await db
+      .update(polls)
+      .set({
+        organizerLinkOpenCount: sql`${polls.organizerLinkOpenCount} + 1`,
+      })
+      .where(eq(polls.id, poll.id));
+  } catch {
+    // Access still succeeds if the counter write fails.
+  }
   return { ok: true as const };
 }
 

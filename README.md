@@ -4,7 +4,7 @@ Make a decision with a group.
 
 Live site: [https://findquorum.net](https://findquorum.net)
 
-Quorum is a lightweight group consensus app. Create one poll with scheduling plus a few simple questions, share a single link, and see where the group stands. Participants do not need accounts. Organizers sign in with Clerk so their polls live in one place.
+Quorum is a lightweight group consensus app. Create one poll with scheduling plus a few simple questions, share a single link, and see where the group stands. No account is required to create a poll or respond. Organizers can optionally sign in with Clerk so their polls live in My Polls.
 
 It started as a way to schedule a fantasy football draft and vote on league dues without another week of group-chat chaos. The same shape of problem shows up for trips, dinners, clubs, and any small group that needs a time and a few decisions.
 
@@ -26,11 +26,11 @@ The current site icon is by [Fach](https://www.flaticon.com/authors/fach) from [
 
 ## Architecture
 
-Polls are identified by a public ID in the URL (`/q/AbC123xyz`). Organizers sign in with Clerk; owned polls appear on `/dashboard`. Participant pages stay public. An unguessable admin token still authorizes the organizer dashboard as a fallback (`/q/.../admin?token=...`). Participants submit a name and answers; an edit token is stored in an httpOnly cookie and also offered as a bookmarkable URL.
+Polls are identified by a public ID in the URL (`/q/AbC123xyz`). Anyone can create a poll. If the organizer is signed in, the poll is owned by their Clerk account and appears on `/dashboard`. Anonymous polls have `ownerUserId = null` and are managed with a private organizer link. Participant pages stay public. An unguessable admin token authorizes the organizer dashboard (`/q/.../admin?token=...`). Participants submit a name and answers; an edit token is stored in an httpOnly cookie and also offered as a bookmarkable URL.
 
 Important relational data lives in tables, not one large JSON blob:
 
-- `polls` - title, timezone, deadline, status, visibility settings, public ID, owner, admin token
+- `polls` - title, timezone, deadline, status, visibility settings, public ID, owner, admin token, and first-party product metrics (anonymous create, private-link copy, claim, private-link opens)
 - `questions` - generic questions (`availability`, `yes_no`, `multiple_choice`, `text`)
 - `question_options` - multiple-choice labels and availability time ranges
 - `participants` - display name plus edit token
@@ -143,7 +143,7 @@ In the Clerk Dashboard, add your Vercel domain to the allowed origins.
 
 ## Architectural decisions
 
-- **Participants never need accounts.** Organizers sign in with Clerk. Creating a poll attaches it to their account and lists it on `/dashboard`.
+- **Accounts are optional.** Anyone can create a poll. Signed-in creation attaches it to the Clerk account and lists it on `/dashboard`. Anonymous organizers can later save a poll to an account if they still have organizer access.
 - **Generic questions first.** Availability is a specialized question type with candidate time ranges, not a separate poll product.
 - **Week calendar for candidate times.** Organizers click or drag on a week grid to add voting options, with duration presets and a selected-times list for fine-tuning. A month view is there to jump between weeks.
 - **Duplicate names are allowed.** Names are labels, not identity. Each submission is still a distinct participant row.

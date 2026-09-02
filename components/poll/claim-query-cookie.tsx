@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { persistAdminCookie, persistEditCookie } from "@/app/actions/auth-cookies";
+import { productEvent, trackProduct } from "@/lib/analytics/product";
 
 export function ClaimQueryCookie({
   publicId,
@@ -30,6 +31,9 @@ export function ClaimQueryCookie({
           ? await persistEditCookie(publicId, token)
           : await persistAdminCookie(publicId, token);
       if (result.ok) {
+        if (kind === "admin") {
+          trackProduct(productEvent.organizerLinkOpened);
+        }
         router.replace(href);
       }
     }

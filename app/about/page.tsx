@@ -24,22 +24,7 @@ export const metadata: Metadata = {
 export default function AboutPage() {
   return (
     <PageShell>
-      <SiteHeader
-        action={
-          <LinkButton
-            href="/create"
-            variant="ghost"
-            size="sm"
-            className="whitespace-nowrap"
-            aria-label="Create a poll"
-          >
-            <span className="sm:hidden" aria-hidden="true">
-              Create
-            </span>
-            <span className="max-sm:hidden">Create a poll</span>
-          </LinkButton>
-        }
-      />
+      <SiteHeader />
       <Main className="mx-auto w-full max-w-2xl px-4 py-16 sm:py-24">
         <p className="text-xs font-medium uppercase tracking-wide text-muted">About</p>
         <h1 className="mt-2 font-serif text-4xl tracking-tight text-foreground sm:text-5xl">
@@ -58,7 +43,7 @@ export default function AboutPage() {
           <p>So I built one place for both.</p>
           <p>
             Quorum is meant to be simple: create a poll, send one link, let everyone respond, and
-            see where the group agrees.
+            see where the group agrees. No account required.
           </p>
         </div>
         <p className="mt-10 text-sm text-muted">

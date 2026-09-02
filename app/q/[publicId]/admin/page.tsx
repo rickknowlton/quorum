@@ -8,6 +8,7 @@ import { CopyButton } from "@/components/ui/copy-button";
 import { LinkButton } from "@/components/ui/button";
 import { Card, Main, PageShell, SiteHeader } from "@/components/ui/shell";
 import { ClaimQueryCookie } from "@/components/poll/claim-query-cookie";
+import { SavePollToAccount } from "@/components/poll/save-poll-to-account";
 import { getOrganizerAccess } from "@/lib/auth/access";
 import { matchesStoredSecret } from "@/lib/auth/tokens";
 import { timezoneLabel } from "@/lib/dates/format";
@@ -75,7 +76,9 @@ export default async function AdminPage({ params, searchParams }: Props) {
             href={adminPath(publicId)}
           />
         ) : null}
-        {access.isOwner ? null : (
+        {poll.ownerUserId === null ? (
+          <SavePollToAccount publicId={publicId} />
+        ) : access.isOwner ? null : (
           <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-950">
             <p className="font-medium">This browser remembers organizer access.</p>
             <p className="mt-1">

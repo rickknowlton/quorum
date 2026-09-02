@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { LinkButton } from "@/components/ui/button";
 import { Main, PageShell, SiteHeader } from "@/components/ui/shell";
 import { GITHUB_URL } from "@/lib/seo/site";
 
@@ -24,22 +23,7 @@ export const metadata: Metadata = {
 export default function PrivacyPage() {
   return (
     <PageShell>
-      <SiteHeader
-        action={
-          <LinkButton
-            href="/create"
-            variant="ghost"
-            size="sm"
-            className="whitespace-nowrap"
-            aria-label="Create a poll"
-          >
-            <span className="sm:hidden" aria-hidden="true">
-              Create
-            </span>
-            <span className="max-sm:hidden">Create a poll</span>
-          </LinkButton>
-        }
-      />
+      <SiteHeader />
       <Main className="mx-auto w-full max-w-2xl px-4 py-16 sm:py-24">
         <p className="text-xs font-medium uppercase tracking-wide text-muted">Legal</p>
         <h1 className="mt-2 font-serif text-4xl tracking-tight text-foreground sm:text-5xl">
@@ -58,8 +42,9 @@ export default function PrivacyPage() {
               What Quorum stores
             </h2>
             <p className="mt-3">
-              Organizers sign in with Clerk. Clerk holds the account details used to sign in, such
-              as an email address or a connected Google account.
+              You can create a poll without an account. If you choose to save a poll to an account,
+              sign-in is handled by Clerk, which holds the details used to sign in, such as an
+              email address or a connected Google account.
             </p>
             <p className="mt-3">
               Polls you create are saved in Quorum’s database: titles, descriptions, questions,
@@ -72,7 +57,9 @@ export default function PrivacyPage() {
             <h2 className="text-xl font-semibold tracking-tight text-foreground">Cookies</h2>
             <p className="mt-3">
               After someone responds, Quorum sets a cookie so they can come back and edit that
-              response on the same browser. Clerk also uses cookies to keep organizers signed in.
+              response on the same browser. Creating or opening a poll as an organizer also sets a
+              cookie so this browser can manage that poll. Clerk uses cookies to keep signed-in
+              organizers signed in.
             </p>
             <p className="mt-3">
               These cookies are for running the product. Quorum does not use advertising cookies.
@@ -84,8 +71,15 @@ export default function PrivacyPage() {
               Why Quorum stores it
             </h2>
             <p className="mt-3">
-              Organizer accounts are used so you can sign in and find your polls. Poll content and
-              responses are stored so the group can vote and see results.
+              Optional organizer accounts are used so you can find your polls later. Poll content
+              and responses are stored so the group can vote and see results.
+            </p>
+            <p className="mt-3">
+              Quorum also keeps a few first-party counts on each poll: whether it was created
+              without an account, whether the organizer copied the private management link, whether
+              they later saved it to an account, and how often that private link is opened. Those
+              are used to see whether accountless creation is working. They are not used for ads,
+              and they do not include the links themselves.
             </p>
           </section>
 
@@ -113,7 +107,9 @@ export default function PrivacyPage() {
               The site is hosted on Vercel. Account sign-in is handled by Clerk. Poll data is stored
               in a PostgreSQL database. Those providers process data as needed to run their
               services. Vercel also collects cookieless page-view analytics so I can see which
-              pages are used.
+              pages are used. Query strings are stripped from those page views so a private
+              organizer link is not sent to Vercel. The same product events may be sent as
+              Vercel custom events, without poll IDs or links.
             </p>
           </section>
 

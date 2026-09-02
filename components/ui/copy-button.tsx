@@ -7,15 +7,18 @@ import { Button } from "@/components/ui/button";
 export function CopyButton({
   value,
   label,
+  onCopied,
 }: {
   value: string;
   label: string;
+  onCopied?: () => void;
 }) {
   const [copied, setCopied] = useState(false);
 
   async function copy() {
     await navigator.clipboard.writeText(value);
     setCopied(true);
+    onCopied?.();
     window.setTimeout(() => setCopied(false), 1800);
   }
 

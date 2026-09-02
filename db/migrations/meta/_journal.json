@@ -29,6 +29,13 @@
       "when": 1788283711655,
       "tag": "0003_rls_lockdown",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1788316601177,
+      "tag": "0004_poll_product_metrics",
+      "breakpoints": true
     }
   ]
 }

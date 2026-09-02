@@ -11,3 +11,11 @@ export function isOrganizerAuthorized(
 ) {
   return isPollOwner(poll, userId) || matchesStoredSecret(presentedToken, poll.adminToken);
 }
+
+export function canClaimAnonymousPoll(options: {
+  ownerUserId: string | null;
+  userId: string | null | undefined;
+  hasValidOrganizerToken: boolean;
+}) {
+  return Boolean(options.userId && options.ownerUserId === null && options.hasValidOrganizerToken);
+}

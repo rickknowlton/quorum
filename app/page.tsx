@@ -9,22 +9,7 @@ import { Main, PageShell, SiteHeader } from "@/components/ui/shell";
 export default function HomePage() {
   return (
     <PageShell>
-      <SiteHeader
-        action={
-          <LinkButton
-            href="/create"
-            variant="ghost"
-            size="sm"
-            className="whitespace-nowrap"
-            aria-label="Create a poll"
-          >
-            <span className="sm:hidden" aria-hidden="true">
-              Create
-            </span>
-            <span className="max-sm:hidden">Create a poll</span>
-          </LinkButton>
-        }
-      />
+      <SiteHeader />
       <Main className="mx-auto w-full max-w-5xl px-4 py-16 sm:py-24">
         <section className="max-w-2xl">
           <p className="font-serif text-5xl tracking-tight text-foreground sm:text-6xl">Quorum</p>
@@ -34,8 +19,7 @@ export default function HomePage() {
           <p className="mt-4 max-w-xl text-lg leading-relaxed text-muted">
             Find a time, take a vote, settle the details.
             <br />
-            No account needed to respond. Create a poll, share one link, and see where the group
-            agrees.
+            No account needed. Create a poll, share one link, and see where the group agrees.
           </p>
           <div className="mt-8">
             <LinkButton href="/create">Create a poll</LinkButton>

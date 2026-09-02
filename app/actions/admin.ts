@@ -1,7 +1,8 @@
 "use server";
 
 import { cookies } from "next/headers";
-import { and, eq, inArray, notInArray } from "drizzle-orm";
+import { auth } from "@clerk/nextjs/server";
+import { and, eq, inArray, isNull, notInArray } from "drizzle-orm";
 import { db } from "@/db";
 import {
   finalizations,
@@ -11,7 +12,9 @@ import {
   questions,
 } from "@/db/schema";
 import { getOrganizerAccess } from "@/lib/auth/access";
+import { canClaimAnonymousPoll } from "@/lib/auth/organizer";
 import {
+  adminCookieName,
   authCookieDeleteOptions,
   editCookieName,
   matchesStoredSecret,
@@ -510,4 +513,62 @@ async function deleteStaleOptions(tx: DbTransaction, questionId: string, keepIds
   await tx
     .delete(questionOptions)
     .where(and(eq(questionOptions.questionId, questionId), notInArray(questionOptions.id, [...keepIds])));
+}
+
+export async function claimPollAction(
+  publicId: string,
+): Promise<{ error: string } | { ok: true }> {
+  const { isAuthenticated, userId } = await auth();
+  if (!isAuthenticated || !userId) {
+    return { error: "Sign in to save this poll to your account." };
+  }
+
+  const poll = await getPollByPublicId(publicId);
+  if (!poll) {
+    return { error: "This poll could not be found." };
+  }
+
+  if (poll.ownerUserId === userId) {
+    return { ok: true };
+  }
+
+  const cookieStore = await cookies();
+  const cookieToken = cookieStore.get(adminCookieName(publicId))?.value;
+  const hasValidOrganizerToken = matchesStoredSecret(cookieToken, poll.adminToken);
+
+  if (!canClaimAnonymousPoll({
+    ownerUserId: poll.ownerUserId,
+    userId,
+    hasValidOrganizerToken,
+  })) {
+    if (poll.ownerUserId) {
+      return { error: "This poll already belongs to an account." };
+    }
+    return { error: "Use the private organizer link for this poll first." };
+  }
+
+  try {
+    const [updated] = await db
+      .update(polls)
+      .set({ ownerUserId: userId, claimedAt: new Date(), updatedAt: new Date() })
+      .where(and(eq(polls.publicId, publicId), isNull(polls.ownerUserId)))
+      .returning({ id: polls.id });
+
+    if (!updated) {
+      return { error: "This poll already belongs to an account." };
+    }
+
+    revalidatePath("/dashboard");
+    revalidatePath(`/q/${publicId}`);
+    revalidatePath(`/q/${publicId}/admin`);
+    return { ok: true };
+  } catch (error) {
+    console.error(error);
+    if (isDatabaseUnavailable(error)) {
+      return {
+        error: "Could not reach the database. Make sure PostgreSQL is running, then try again.",
+      };
+    }
+    return { error: "Could not save this poll to your account. Please try again." };
+  }
 }

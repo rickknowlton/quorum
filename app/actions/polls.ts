@@ -1,15 +1,19 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { cookies, headers } from "next/headers";
 import { auth } from "@clerk/nextjs/server";
+import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import { polls, questionOptions, questions } from "@/db/schema";
 import { wallTimeToUtc } from "@/lib/dates/format";
 import { isDatabaseUnavailable } from "@/lib/db/connection-error";
 import { createPublicId, createSecretToken } from "@/lib/ids";
-import { hashSecret } from "@/lib/auth/tokens";
+import { adminCookieName, authCookieOptions, hashSecret, matchesStoredSecret } from "@/lib/auth/tokens";
 import { followUpValues, multipleChoiceSettingsJson } from "@/lib/polls/question-settings";
-import { limitPollCreation } from "@/lib/rate-limit";
+import { getPollByPublicId } from "@/lib/polls/queries";
+import { clientIpFromHeaders, limitPollCreation } from "@/lib/rate-limit";
+import { isCreatedAnonymous } from "@/lib/polls/product-metrics";
 import { createPollSchema, type CreatePollInput } from "@/lib/validation/poll";
 
 function flattenZodError(error: { issues: Array<{ message: string }> }) {
@@ -18,13 +22,11 @@ function flattenZodError(error: { issues: Array<{ message: string }> }) {
 
 export async function createPollAction(
   input: unknown,
-): Promise<{ error: string } | { publicId: string }> {
+): Promise<{ error: string } | { publicId: string; adminToken: string }> {
   const { isAuthenticated, userId } = await auth();
-  if (!isAuthenticated || !userId) {
-    return { error: "Sign in to create a poll." };
-  }
+  const ownerUserId = isAuthenticated && userId ? userId : null;
 
-  const limited = await limitPollCreation(userId);
+  const limited = await limitPollCreation(ownerUserId, clientIpFromHeaders(await headers()));
   if (!limited.ok) {
     return { error: "You’re creating polls too quickly. Please wait and try again." };
   }
@@ -37,6 +39,7 @@ export async function createPollAction(
   }
 
   const data = parsed.data;
+  const rawAdminToken = createSecretToken();
 
   try {
     const created = await db.transaction(async (tx) => {
@@ -44,8 +47,9 @@ export async function createPollAction(
         .insert(polls)
         .values({
           publicId: createPublicId(),
-          adminToken: hashSecret(createSecretToken()),
-          ownerUserId: userId,
+          adminToken: hashSecret(rawAdminToken),
+          ownerUserId,
+          createdAnonymous: isCreatedAnonymous(ownerUserId),
           title: data.title,
           description: data.description || null,
           timezone: data.timezone,
@@ -126,9 +130,18 @@ export async function createPollAction(
       return poll;
     });
 
-    revalidatePath("/dashboard");
+    const cookieStore = await cookies();
+    cookieStore.set(
+      adminCookieName(created.publicId),
+      rawAdminToken,
+      authCookieOptions(created.publicId),
+    );
+    if (ownerUserId) {
+      revalidatePath("/dashboard");
+    }
     return {
       publicId: created.publicId,
+      adminToken: rawAdminToken,
     };
   } catch (error) {
     console.error(error);
@@ -142,3 +155,26 @@ export async function createPollAction(
 }
 
 export type CreatePollPayload = CreatePollInput;
+
+export async function recordOrganizerLinkCopiedAction(publicId: string) {
+  const poll = await getPollByPublicId(publicId);
+  if (!poll) {
+    return { ok: false as const };
+  }
+
+  const cookieStore = await cookies();
+  const cookieToken = cookieStore.get(adminCookieName(publicId))?.value;
+  if (!matchesStoredSecret(cookieToken, poll.adminToken)) {
+    return { ok: false as const };
+  }
+
+  try {
+    await db
+      .update(polls)
+      .set({ organizerLinkCopiedAt: new Date() })
+      .where(and(eq(polls.publicId, publicId), isNull(polls.organizerLinkCopiedAt)));
+    return { ok: true as const };
+  } catch {
+    return { ok: false as const };
+  }
+}

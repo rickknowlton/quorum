@@ -2,18 +2,21 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@clerk/nextjs";
 import { CalendarClock, Check, List, MessageSquarePlus, Plus } from "lucide-react";
-import { createPollAction } from "@/app/actions/polls";
+import { createPollAction, recordOrganizerLinkCopiedAction } from "@/app/actions/polls";
+import { productEvent, trackProduct } from "@/lib/analytics/product";
 import {
   createDraftQuestion,
   QuestionList,
   serializeQuestions,
   type DraftQuestion,
 } from "@/components/questions/question-list";
-import { Button } from "@/components/ui/button";
+import { Button, LinkButton } from "@/components/ui/button";
+import { CopyButton } from "@/components/ui/copy-button";
 import { FieldError, Hint, Input, Label, Textarea } from "@/components/ui/fields";
 import { Card } from "@/components/ui/shell";
-import { adminPath } from "@/lib/polls/paths";
+import { adminPath, participantPath } from "@/lib/polls/paths";
 import type { QuestionType } from "@/db/schema";
 
 const ADD_TYPES: Array<{ type: QuestionType; label: string; icon: typeof CalendarClock }> = [
@@ -25,6 +28,7 @@ const ADD_TYPES: Array<{ type: QuestionType; label: string; icon: typeof Calenda
 
 export function CreatePollForm() {
   const router = useRouter();
+  const { isSignedIn } = useAuth();
   const timezone = useMemo(
     () => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
     [],
@@ -38,6 +42,7 @@ export function CreatePollForm() {
   const [allowMaybe, setAllowMaybe] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [created, setCreated] = useState<{ publicId: string; adminToken: string } | null>(null);
 
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -61,7 +66,48 @@ export function CreatePollForm() {
       return;
     }
 
-    router.push(adminPath(result.publicId));
+    if (isSignedIn) {
+      router.push(adminPath(result.publicId));
+      return;
+    }
+
+    setCreated({ publicId: result.publicId, adminToken: result.adminToken });
+    trackProduct(productEvent.pollCreatedAnonymous);
+    setPending(false);
+  }
+
+  if (created) {
+    const origin = typeof window === "undefined" ? "" : window.location.origin;
+    const participantUrl = `${origin}${participantPath(created.publicId)}`;
+    const organizerUrl = `${origin}${adminPath(created.publicId, created.adminToken)}`;
+
+    return (
+      <Card>
+        <p className="text-xs font-medium uppercase tracking-wide text-muted">Poll created</p>
+        <h2 className="mt-2 text-xl font-semibold tracking-tight">No account required</h2>
+        <p className="mt-2 text-muted">
+          Save this private organizer link if you want to manage the poll from another device.
+          Anyone with that link can manage the poll.
+        </p>
+        <div className="mt-5 flex flex-wrap gap-2">
+          <CopyButton value={participantUrl} label="Copy participant link" />
+          <CopyButton
+            value={organizerUrl}
+            label="Copy private organizer link"
+            onCopied={() => {
+              trackProduct(productEvent.copiedOrganizerLink);
+              void recordOrganizerLinkCopiedAction(created.publicId);
+            }}
+          />
+          <LinkButton href={adminPath(created.publicId)} size="sm">
+            Open poll admin
+          </LinkButton>
+        </div>
+        <p className="mt-4 text-sm text-muted">
+          Prefer not to keep track of a link? Save this poll to an account from the admin page.
+        </p>
+      </Card>
+    );
   }
 
   return (

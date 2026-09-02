@@ -28,6 +28,7 @@ async function seed() {
     .values({
       publicId: DEMO_PUBLIC_ID,
       adminToken: hashSecret(DEMO_ADMIN_TOKEN),
+      createdAnonymous: false,
       title: "Booze League Draft",
       description: "Let's lock in the draft and a few league rules before the season.",
       timezone: TIMEZONE,

@@ -5,6 +5,15 @@ import { rateLimits } from "@/db/schema";
 export const SUBMIT_PER_IP_PER_MINUTE = 20;
 export const SUBMIT_PER_POLL_PER_MINUTE = 60;
 export const CREATE_PER_USER_PER_HOUR = 10;
+export const CREATE_PER_ANON_IP_PER_HOUR = 5;
+
+export function pollCreationRateLimitKey(userId: string | null, ip: string) {
+  return userId ? `create:user:${userId}` : `create:ip:${ip}`;
+}
+
+export function pollCreationLimit(userId: string | null) {
+  return userId ? CREATE_PER_USER_PER_HOUR : CREATE_PER_ANON_IP_PER_HOUR;
+}
 
 export function clientIpFromHeaders(headerList: Headers) {
   const forwarded = headerList.get("x-forwarded-for");
@@ -71,6 +80,10 @@ export async function limitPollSubmission(publicId: string, ip: string) {
   return { ok: perPoll.ok };
 }
 
-export async function limitPollCreation(userId: string) {
-  return consumeRateLimit(`create:user:${userId}`, CREATE_PER_USER_PER_HOUR, 60 * 60 * 1000);
+export async function limitPollCreation(userId: string | null, ip: string) {
+  return consumeRateLimit(
+    pollCreationRateLimitKey(userId, ip),
+    pollCreationLimit(userId),
+    60 * 60 * 1000,
+  );
 }
